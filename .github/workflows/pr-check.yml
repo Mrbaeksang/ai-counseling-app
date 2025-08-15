@@ -1,0 +1,39 @@
+name: PR 체크
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: JDK 21 설정
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    
+    - name: Gradle 권한 설정
+      run: chmod +x gradlew
+    
+    - name: 코드 스타일 체크 (나중에 ktlint 추가)
+      run: echo "ktlint 체크 예정"
+    
+    - name: 컴파일 체크
+      run: ./gradlew compileKotlin compileTestKotlin
+    
+    - name: PR 코멘트 - 빌드 성공
+      if: success()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ 빌드 및 컴파일 체크 성공!'
+          })

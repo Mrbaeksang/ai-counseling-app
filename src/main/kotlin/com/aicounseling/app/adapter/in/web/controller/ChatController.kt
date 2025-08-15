@@ -1,6 +1,6 @@
-package com.aicounseling.app.controller
+package com.aicounseling.app.adapter.`in`.web.controller
 
-import com.aicounseling.app.service.OpenRouterService
+import com.aicounseling.app.adapter.out.ai.OpenRouterService
 import org.springframework.web.bind.annotation.*
 
 @RestController

@@ -1,4 +1,4 @@
-package com.aicounseling.app.service
+package com.aicounseling.app.adapter.out.ai
 
 import com.aicounseling.app.config.OpenRouterProperties
 import kotlinx.coroutines.reactive.awaitSingle
