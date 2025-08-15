@@ -4,12 +4,12 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 /**
- * ChatSession 엔티티 - 상담 대화 세션
- * 심플하게 구현 (YAGNI 원칙 적용)
+ * ChatSession 엔티티 - 상담 대화 세션 (순수 데이터만)
+ * 비즈니스 로직은 ChatSessionService로 이동
  */
 @Entity
 @Table(name = "chat_sessions")
-class ChatSession(
+data class ChatSession(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
@@ -32,26 +32,4 @@ class ChatSession(
     
     @Column(name = "closed_at")
     var closedAt: LocalDateTime? = null  // null이면 진행중, 값 있으면 종료됨
-) {
-    /**
-     * 상담 단계 업데이트
-     * AI가 대화 맥락 보고 판단해서 호출
-     */
-    fun updatePhase(newPhase: CounselingPhase, reason: String) {
-        this.phase = newPhase
-        this.phaseMetadata = reason
-    }
-    
-    /**
-     * 세션 종료
-     * 사용자가 명시적으로 종료하거나 AI가 마무리 제안 후 동의 시
-     */
-    fun close() {
-        this.closedAt = LocalDateTime.now()
-    }
-    
-    /**
-     * 세션 활성 여부 확인
-     */
-    fun isActive(): Boolean = closedAt == null
-}
+)

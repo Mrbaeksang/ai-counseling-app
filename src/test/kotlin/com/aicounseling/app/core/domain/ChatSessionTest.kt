@@ -27,7 +27,7 @@ class ChatSessionTest {
         assertThat(session.phaseMetadata).isEmpty()
         assertThat(session.createdAt).isNotNull()
         assertThat(session.closedAt).isNull()  // 아직 종료 안됨
-        assertThat(session.isActive()).isTrue()  // 활성 상태
+        assertThat(session.closedAt).isNull()  // 활성 상태
     }
     
     @Test
@@ -41,7 +41,8 @@ class ChatSessionTest {
         
         // when - AI가 다음 단계로 판단
         val aiReason = "사용자가 충분히 편안해 보임. 문제 탐색 시작 가능"
-        session.updatePhase(CounselingPhase.PROBLEM_EXPLORATION, aiReason)
+        session.phase = CounselingPhase.PROBLEM_EXPLORATION
+        session.phaseMetadata = aiReason
         
         // then
         assertThat(session.phase).isEqualTo(CounselingPhase.PROBLEM_EXPLORATION)
@@ -56,15 +57,13 @@ class ChatSessionTest {
             userId = 1L,
             counselorId = 2L
         )
-        assertThat(session.isActive()).isTrue()
         assertThat(session.closedAt).isNull()
         
         // when - 사용자가 대화 종료
-        session.close()
+        session.closedAt = LocalDateTime.now()
         
         // then
         assertThat(session.closedAt).isNotNull()
-        assertThat(session.isActive()).isFalse()
         assertThat(session.closedAt).isAfterOrEqualTo(session.createdAt)
     }
     
@@ -78,10 +77,10 @@ class ChatSessionTest {
         )
         
         // when
-        session.close()
+        session.closedAt = LocalDateTime.now()
         
         // then
-        assertThat(session.isActive()).isFalse()
+        assertThat(session.closedAt).isNotNull()
     }
     
     @Test
@@ -95,6 +94,5 @@ class ChatSessionTest {
         
         // then - closedAt이 null이면 활성
         assertThat(session.closedAt).isNull()
-        assertThat(session.isActive()).isTrue()
     }
 }
