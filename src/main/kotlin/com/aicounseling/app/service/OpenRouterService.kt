@@ -51,7 +51,7 @@ class OpenRouterService(
             model = properties.model,
             messages = messages,
             temperature = 0.7,
-            max_tokens = 1000
+            max_tokens = 2000  // 상담 답변 충분하게
         )
         
         println("Sending request to OpenRouter: ${request.model}")

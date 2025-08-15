@@ -40,6 +40,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     // implementation("org.springframework.ai:spring-ai-starter-model-openai") // OpenRouter 직접 사용으로 제거
+    
+    // Swagger/OpenAPI 문서화
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    
+    // .env 파일 지원
+    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
