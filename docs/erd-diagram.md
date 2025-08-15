@@ -5,199 +5,148 @@
 ```mermaid
 erDiagram
     users ||--o{ chat_sessions : "has"
-    users ||--o{ ratings : "gives"
-    users ||--o{ reviews : "writes"
     users ||--o{ user_favorite_counselors : "favorites"
-    users ||--o{ referrals : "refers"
-    users ||--|| user_limits : "has"
+    users ||--o{ counselor_ratings : "rates"
     
-    counselors ||--o{ chat_sessions : "participates"
-    counselors ||--o{ ratings : "receives"
-    counselors ||--o{ reviews : "receives"
+    counselors ||--o{ chat_sessions : "conducts"
     counselors ||--o{ user_favorite_counselors : "favorited_by"
-    counseling_categories ||--o{ counselors : "contains"
+    counselors ||--o{ counselor_ratings : "rated_by"
     
     chat_sessions ||--o{ messages : "contains"
-    chat_sessions ||--o{ reviews : "reviewed_in"
+    chat_sessions ||--o| session_summaries : "has"
     
     users {
         bigint id PK
-        string provider
-        string provider_id UK
-        string email UK
-        string nickname
-        string profile_image_url
-        boolean is_premium
+        varchar email UK
+        varchar nickname
+        text preference_matrix "JSON: 사용자 선호 성향"
+        boolean onboarding_completed
         timestamp created_at
-        timestamp last_login_at
-    }
-    user_limits {
-        bigint id PK
-        bigint user_id FK
-        int daily_sessions_used
-        int monthly_sessions_used
-        date last_reset_date
         timestamp updated_at
     }
-    counseling_categories {
-        bigint id PK
-        string name
-        string description
-        string icon_url
-        int display_order
-        boolean is_active
-    }
+    
     counselors {
         bigint id PK
-        bigint category_id FK
-        string name
-        string era
-        string specialty
-        string introduction
-        string conversation_style
-        string ai_prompt
-        string avatar_url
-        boolean is_historical
-        float avg_rating
-        int total_sessions
+        varchar name
+        varchar title
+        text description
+        text personality_matrix "JSON: 상담사 성격 매트릭스"
+        text base_prompt "AI 지시사항"
         boolean is_active
         timestamp created_at
+        timestamp updated_at
     }
+    
     chat_sessions {
         bigint id PK
         bigint user_id FK
         bigint counselor_id FK
-        string title
-        string summary
-        string status
-        int message_count
-        timestamp started_at
-        timestamp ended_at
+        enum phase "RAPPORT/EXPLORATION/ANALYSIS/INTERVENTION/PLANNING/CLOSING"
+        text phase_metadata "AI가 판단한 현재 상태"
+        boolean closing_suggested
+        timestamp created_at
         timestamp last_message_at
     }
+    
     messages {
         bigint id PK
         bigint session_id FK
-        string content
-        boolean is_ai_response
+        enum sender_type "USER/AI"
+        text content
+        text ai_phase_assessment "AI가 판단한 단계 정보"
         boolean is_bookmarked
-        string input_type
         timestamp created_at
     }
-    ratings {
+    
+    session_summaries {
         bigint id PK
-        bigint user_id FK
-        bigint counselor_id FK
         bigint session_id FK
-        int rating
+        text key_insights "핵심 통찰"
+        text emotional_state "감정 변화"
+        text next_steps "다음 논의 사항"
         timestamp created_at
     }
-    reviews {
-        bigint id PK
-        bigint user_id FK
-        bigint counselor_id FK
-        bigint session_id FK
-        int rating
-        string content
-        boolean is_public
-        timestamp created_at
-        timestamp updated_at
-    }
+    
     user_favorite_counselors {
-        bigint user_id PK
-        bigint counselor_id PK
-        timestamp added_at
-    }
-    referrals {
         bigint id PK
-        bigint referrer_id FK
-        string referred_email
-        string referral_code UK
-        string status
-        boolean reward_given
+        bigint user_id FK
+        bigint counselor_id FK
         timestamp created_at
-        timestamp completed_at
+    }
+    
+    counselor_ratings {
+        bigint id PK
+        bigint user_id FK
+        bigint counselor_id FK
+        bigint session_id FK
+        integer rating "1-5"
+        text review
+        timestamp created_at
     }
 ```
 
 ## 테이블 설명
 
-### 👤 사용자 관련
-- **users**: 소셜 로그인 사용자 정보
-- **user_limits**: 무료 사용자 제한 (일일/월간)
-- **referrals**: 친구 추천 관리
+### 1. users
+- 사용자 정보 저장
+- `preference_matrix`: 사용자의 상담 선호 성향 (JSON)
+  - logical: 논리적 vs 감성적 (0-100)
+  - directness: 직설적 vs 완곡한 (0-100)
+  - solutionFocus: 해결중심 vs 공감중심 (0-100)
+  - formalityLevel: 격식있는 vs 친근한 (0-100)
+- `onboarding_completed`: 온보딩 완료 여부
 
-### 🎭 상담사 관련
-- **counseling_categories**: 상담 카테고리 (육아, 연애 등)
-- **counselors**: 철학자/상담사 정보
-- **user_favorite_counselors**: 즐겨찾기 (다대다)
+### 2. counselors
+- 상담사(AI 페르소나) 정보
+- `personality_matrix`: 상담사 성격 특성 (JSON)
+- `base_prompt`: AI에게 전달할 기본 지시사항
+- 현대적 언어 사용, 단계별 상담 진행 지시 포함
 
-### 💬 대화 관련
-- **chat_sessions**: 상담 세션
-- **messages**: 메시지 (음성/텍스트 구분)
+### 3. chat_sessions
+- 사용자와 상담사 간의 대화 세션
+- `phase`: AI가 자율적으로 판단하는 상담 단계
+  - RAPPORT_BUILDING: 라포 형성
+  - PROBLEM_EXPLORATION: 문제 탐색
+  - PATTERN_ANALYSIS: 패턴 분석
+  - INTERVENTION: 개입/해결
+  - ACTION_PLANNING: 실행 계획
+  - CLOSING: 마무리
+- `phase_metadata`: AI의 현재 판단 상태
+- `closing_suggested`: 마무리 제안 여부
 
-### ⭐ 평가 관련
-- **ratings**: 간단 평점 (1-5점)
-- **reviews**: 상세 후기
+### 4. messages
+- 개별 메시지 저장
+- `ai_phase_assessment`: AI가 각 메시지마다 판단한 단계 정보
+- `is_bookmarked`: 사용자가 중요 표시한 메시지
 
-## 주요 비즈니스 로직
+### 5. session_summaries
+- 세션 종료 시 AI가 생성하는 요약
+- 다음 대화 시 연속성 유지를 위해 사용
+- 사용자가 요약을 원할 때만 상세 요약 생성
 
-### 무료 사용자 제한
-```sql
--- 일일 제한 체크
-SELECT daily_sessions_used 
-FROM user_limits 
-WHERE user_id = ? 
-  AND last_reset_date = CURRENT_DATE;
+### 6. user_favorite_counselors
+- 사용자가 즐겨찾기한 상담사
+- 빠른 접근을 위한 매핑 테이블
 
--- 월간 제한 체크  
-SELECT monthly_sessions_used
-FROM user_limits
-WHERE user_id = ?
-  AND MONTH(last_reset_date) = MONTH(CURRENT_DATE);
-```
-
-### 상담사 평점 업데이트
-```sql
--- 평균 평점 계산 (트리거 or 스케줄러)
-UPDATE counselors c
-SET avg_rating = (
-    SELECT AVG(rating) 
-    FROM ratings r 
-    WHERE r.counselor_id = c.id
-);
-```
-
-### 세션 자동 종료
-```sql
--- 30분 무응답 세션 종료
-UPDATE chat_sessions
-SET status = 'closed',
-    ended_at = CURRENT_TIMESTAMP
-WHERE status = 'active'
-  AND last_message_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE);
-```
-
-### 인기 상담사 조회
-```sql
-SELECT c.*, COUNT(cs.id) as session_count
-FROM counselors c
-LEFT JOIN chat_sessions cs ON c.id = cs.counselor_id
-WHERE cs.started_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-GROUP BY c.id
-ORDER BY session_count DESC, c.avg_rating DESC
-LIMIT 10;
-```
+### 7. counselor_ratings
+- 세션 종료 후 상담사 평가
+- 매칭 알고리즘 개선에 활용
 
 ## 인덱스 전략
 
 ```sql
--- 자주 조회되는 컬럼
-CREATE INDEX idx_sessions_user ON chat_sessions(user_id, status);
-CREATE INDEX idx_sessions_counselor ON chat_sessions(counselor_id);
-CREATE INDEX idx_messages_session ON messages(session_id);
-CREATE INDEX idx_messages_bookmark ON messages(session_id, is_bookmarked);
-CREATE INDEX idx_ratings_counselor ON ratings(counselor_id);
-CREATE INDEX idx_reviews_counselor ON reviews(counselor_id, is_public);
-CREATE INDEX idx_referrals_code ON referrals(referral_code);
+-- 자주 사용되는 조회를 위한 인덱스
+CREATE INDEX idx_sessions_user_id ON chat_sessions(user_id);
+CREATE INDEX idx_sessions_counselor_id ON chat_sessions(counselor_id);
+CREATE INDEX idx_messages_session_id ON messages(session_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_ratings_counselor_id ON counselor_ratings(counselor_id);
 ```
+
+## 주요 변경사항
+
+1. **태그 시스템 제거**: concern_tags, counselor_tags 등 복잡한 태그 시스템 삭제
+2. **매트릭스 기반 매칭**: JSON 필드로 성격/선호도 매트릭스 저장
+3. **AI 자율 판단**: 상담 단계를 AI가 맥락을 보고 자동 판단
+4. **세션 요약**: 연속성 있는 상담을 위한 요약 테이블 추가
+5. **심플한 구조**: 불필요한 조인 최소화, 성능 최적화
