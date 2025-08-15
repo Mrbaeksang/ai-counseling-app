@@ -1,11 +1,5 @@
 # AI 철학자 상담 앱 - AI 개발 규칙
 
-## 🎯 프로젝트 개요
-**AI 철학자/상담사와 1:1 대화하는 상담 애플리케이션**
-- 역사적 인물들이 각자의 철학과 화법으로 상담 제공
-- 소크라테스(산파술), 프로이트(정신분석), 카사노바(연애), 공자(가족윤리) 등 30명+
-- 타겟: Google Play Store 배포 (Android 앱)
-
 ## 🚨 절대 준수 규칙
 
 ### 1. 코드 수정 규칙
@@ -31,77 +25,64 @@
 - **시크릿 절대 커밋 금지** - API 키, 비밀번호 등
 - **환경변수로 관리**: `${OPENROUTER_API_KEY}`
 
-### 5. Clean Architecture 규칙
-- **Anemic Domain Model 사용** - 엔티티는 순수 데이터만 (메서드 최소화)
-- **비즈니스 로직은 Service에** - 엔티티에 복잡한 로직 금지
-- **의존성 방향**: Domain ← UseCase ← Adapter (안쪽으로만)
-- **인터페이스 먼저 정의** - 구현체 만들기 전에 인터페이스부터
-
 ## 📦 기술 스택
 
 ### Backend
 - **Kotlin + Spring Boot 3.5** (WebFlux 비동기)
-- **Clean Architecture** (domain/usecase/adapter 분리)
+- **Feature-based Architecture** (domain/기능별 패키지)
 - **OpenRouter API** (Spring AI 없이 직접 WebClient 구현)
-- **PostgreSQL + Redis** (운영), H2 (개발/테스트)
-- **JPA + QueryDSL** (ORM)
+- **PostgreSQL** (운영), **H2** (개발/테스트)
+- **JPA** (ORM)
+- **JWT 인증** (Spring OAuth2 Client 사용 안함)
 
 ### Frontend (예정)
 - **Android Native** (Kotlin + Jetpack Compose)
 - **MVVM 패턴**
 
-## 🏗️ 프로젝트 구조 (Clean Architecture)
+## 🏗️ 프로젝트 구조 (Feature-based)
 ```
 com.aicounseling.app/
-├── core/
-│   ├── domain/           # 순수 엔티티 (데이터만)
-│   └── usecase/         
-│       ├── port/
-│       │   ├── in/      # UseCase 인터페이스
-│       │   └── out/     # Repository 인터페이스
-│       └── service/     # UseCase 구현체
-├── adapter/
-│   ├── in/
-│   │   └── web/         # Controller, REST API
-│   └── out/
-│       ├── persistence/ # JPA Repository 구현
-│       └── ai/         # OpenRouter 연동
-├── config/             # Spring 설정
-└── common/            # 공통 유틸, 예외처리
+├── domain/           # 기능별 패키지
+│   ├── user/         # User.kt, UserRepository.kt, UserService.kt, UserController.kt
+│   ├── counselor/    # 상담사 관련 모든 파일
+│   ├── session/      # 세션 관련 모든 파일
+│   └── auth/         # 인증 관련 모든 파일
+├── global/           # 전역 설정
+│   ├── config/       # Spring 설정
+│   ├── security/     # JWT, 필터
+│   ├── exception/    # 예외 처리
+│   ├── jpa/          # BaseEntity
+│   ├── rsData/       # 응답 포맷
+│   └── openrouter/   # AI API 연동
+└── standard/         # 유틸리티
+    └── util/         # Ut 클래스
 ```
 
-## 🔄 구현 순서 (Clean Architecture)
-1. **Domain Entity** - 순수 데이터 클래스
-2. **UseCase Interface** (port/in) - 비즈니스 로직 인터페이스
-3. **Repository Interface** (port/out) - 데이터 접근 인터페이스
-4. **Service** (usecase/service) - UseCase 구현체
-5. **Repository 구현** (adapter/out/persistence) - JPA Repository
-6. **Controller** (adapter/in/web) - REST API
+## 🔧 Global 설정 체크리스트
+- ✅ SecurityConfig - JWT 필터 체인
+- ✅ JwtTokenProvider - 토큰 생성/검증
+- ✅ JwtAuthenticationFilter - 요청 토큰 검증
+- ✅ GlobalExceptionHandler - 통합 에러 처리
+- ✅ CorsConfig - 프로파일별 CORS
+- ✅ RsData - 표준 응답 포맷
+- ✅ Ut - 유틸리티 함수
+- ✅ BaseEntity - JPA Auditing
+- ✅ ValidationConfig - Bean Validation
 
 ## 💬 OpenRouter 설정
 - **엔드포인트**: `https://openrouter.ai/api/v1/chat/completions`
-- **모델**: openai/gpt-4o-mini 또는 openai/gpt-3.5-turbo (비용 효율)
+- **모델**: openai/gpt-4o-mini (비용 효율)
 - **타임아웃**: 60초
 - **Max Tokens**: 2000 (상담 답변용)
 - **필수 헤더**: Authorization, HTTP-Referer, X-Title
 
-## ⚠️ 사용자 성향
-1. **학생** - 정석적인 개발 프로세스 학습 목적
-2. **간단명료한 설명 선호** - 장황한 설명 싫어함
-3. **원인 분석 중시** - "왜 그런지" 설명 필요
-4. **최신 기술 선호** - 2025년 기준 베스트 프랙티스
-5. **초보자** - 기본 개념도 모를 수 있음 (인터페이스, DTO 등)
-
-## 📋 엔티티 구조
-- **User**: 사용자 정보, 소셜 로그인
-- **Counselor**: 상담사 정보, AI 프롬프트
-- **ChatSession**: 대화 세션, 요약
-- **Message**: 개별 메시지, 북마크
-- **SessionSummary**: 세션 요약 (예정)
-- **CounselingCategory**: 육아, 연애, 정신건강 등 (예정)
-- **UserFavoriteCounselor**: 선호 상담사 (예정)
-- **CounselorRating**: 평점 (예정)
-- **CounselorReview**: 리뷰 (예정)
+## 🔄 개발 순서 (Feature-based)
+1. **Entity** - JPA 엔티티
+2. **Repository** - JPA Repository 인터페이스
+3. **Service** - 비즈니스 로직
+4. **Controller** - REST API
+5. **DTO** - 요청/응답 DTO
+6. **Test** - 단위/통합 테스트
 
 ## 🔧 개발 명령어
 ```bash
@@ -119,4 +100,3 @@ com.aicounseling.app/
 5. 설계 없이 코딩 → **설계 문서 먼저**
 6. 막 파일 생성 → **사용자와 상의 먼저**
 7. 중복 폴더 생성 → **기존 구조 확인 먼저**
-8. Repository 인터페이스 없이 Service 구현 → **인터페이스 먼저**

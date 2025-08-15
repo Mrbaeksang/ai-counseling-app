@@ -10,30 +10,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: aicounseling_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    
     steps:
     - uses: actions/checkout@v4
     
@@ -56,23 +32,15 @@ jobs:
     - name: Gradle 권한 설정
       run: chmod +x gradlew
     
-    - name: 환경변수 설정
-      run: |
-        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> $GITHUB_ENV
-        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
-    
     - name: 테스트 실행
       run: ./gradlew test
       env:
         SPRING_PROFILES_ACTIVE: test
-        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/aicounseling_test
-        SPRING_DATASOURCE_USERNAME: postgres
-        SPRING_DATASOURCE_PASSWORD: postgres
-        SPRING_REDIS_HOST: localhost
-        SPRING_REDIS_PORT: 6379
+        OPENROUTER_API_KEY: test-api-key
     
-    - name: 코드 커버리지 체크
-      run: ./gradlew jacocoTestCoverageVerification
+    # - name: 코드 커버리지 체크 (나중에 Jacoco 추가)
+    #   run: ./gradlew jacocoTestCoverageVerification
+    #   continue-on-error: true
     
     - name: 테스트 리포트 업로드
       uses: actions/upload-artifact@v4
@@ -92,11 +60,11 @@ jobs:
         name: app-jar
         path: build/libs/*.jar
 
-  # 배포 작업 (나중에 추가)
-  # deploy:
-  #   needs: test
+  # 나중에 PostgreSQL + Redis 필요할 때 추가
+  # integration-test:
   #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   steps:
-  #     - name: 배포 단계
-  #       run: echo "배포 로직 추가 예정"
+  #   services:
+  #     postgres:
+  #       image: postgres:16
+  #     redis:
+  #       image: redis:7

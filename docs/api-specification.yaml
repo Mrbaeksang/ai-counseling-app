@@ -8,9 +8,9 @@ info:
     email: support@aicounseling.app
 
 servers:
-  - url: http://localhost:8080/api
+  - url: http://localhost:8080/api/v1
     description: 개발 서버
-  - url: https://api.aicounseling.app/api
+  - url: https://api.aicounseling.app/api/v1
     description: 운영 서버
 
 tags:
@@ -25,24 +25,67 @@ tags:
 
 paths:
   # ===== 인증 =====
-  /auth/social-login:
+  /auth/oauth2/google:
     post:
       tags: [auth]
-      summary: 소셜 로그인
+      summary: Google OAuth2 로그인
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [provider, token]
+              required: [token]
               properties:
-                provider:
-                  type: string
-                  enum: [google, kakao]
                 token:
                   type: string
-                  description: 소셜 로그인 토큰
+                  description: Google OAuth2 토큰
+      responses:
+        200:
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/oauth2/kakao:
+    post:
+      tags: [auth]
+      summary: Kakao OAuth2 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Kakao OAuth2 토큰
+      responses:
+        200:
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/oauth2/naver:
+    post:
+      tags: [auth]
+      summary: Naver OAuth2 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Naver OAuth2 토큰
       responses:
         200:
           description: 로그인 성공

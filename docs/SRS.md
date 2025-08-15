@@ -20,7 +20,7 @@
 ## 2. 기능 요구사항
 
 ### 2.1 사용자 관리
-- **FR-001**: 소셜 로그인 (Google, Kakao)
+- **FR-001**: 소셜 로그인 (Google, Kakao, Naver)
 - **FR-002**: 사용자 프로필 관리
 - **FR-003**: 온보딩 프로세스 (선호도 파악)
 
@@ -74,8 +74,8 @@
 - Backend: Kotlin, Spring Boot 3.5, WebFlux
 - Database: PostgreSQL (운영), H2 (개발)
 - Cache: Redis
-- AI: OpenRouter API (liquid/lfm-40b)
-- Architecture: Clean Architecture
+- AI: OpenRouter API (openai/gpt-oss-20b)
+- Architecture: 도메인별 패키지 구조
 
 ### 4.2 운영 환경
 - JDK 21
@@ -86,7 +86,7 @@
 
 ### 5.1 외부 인터페이스
 - OpenRouter API 연동
-- OAuth 2.0 (Google, Kakao)
+- OAuth 2.0 (Google, Kakao, Naver)
 
 ### 5.2 API 인터페이스
 - RESTful API

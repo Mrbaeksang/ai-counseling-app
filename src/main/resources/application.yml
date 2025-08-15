@@ -1,48 +1,54 @@
 spring:
   application:
     name: ai-counseling-app
-  
-  ai:
-    openai:
-      enabled: false  # Spring AI OpenAI 비활성화
-  
+  profiles:
+    active: dev  # 기본 프로파일
+    
+  jpa:
+    open-in-view: false  # 성능 최적화
+    
   security:
     user:
       name: admin
-      password: admin
-    
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
-    
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+      password: admin  # 개발용 임시
+
+# Actuator 설정 (헬스체크)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
       
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        
-# OpenRouter 설정
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.aicounseling: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:aicounseling-secret-key-for-development-only-change-in-production}
+  expiration: 86400000  # 24시간 (밀리초)
+  refresh-expiration: 604800000  # 7일
+
+# OpenRouter API 설정
 openrouter:
-  api-key: ${OPENROUTER_API_KEY}  # .env 파일에서 읽음
-  model: openai/gpt-oss-20b
-  site-url: http://localhost:8080
-  site-name: AI Counseling App
-  
+  api-key: ${OPENROUTER_API_KEY}
+  base-url: https://openrouter.ai/api/v1
+  model: openai/gpt-4o-mini
+  timeout: 60
+
 # 서버 설정
 server:
   port: 8080
-  
-# 로깅
-logging:
-  level:
-    com.aicounseling: DEBUG
-    org.springframework.web.reactive.function.client: DEBUG
+  error:
+    include-message: always
+    include-stacktrace: never
