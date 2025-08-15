@@ -36,34 +36,6 @@ enum class CounselingPhase(
     CLOSING(
         "마무리",
         "핵심 통찰 정리와 격려"
-    );
-    
-    /**
-     * 다음 단계 추천 (AI가 참고용으로 사용)
-     */
-    fun getNextPhase(): CounselingPhase? {
-        return when(this) {
-            RAPPORT_BUILDING -> PROBLEM_EXPLORATION
-            PROBLEM_EXPLORATION -> PATTERN_ANALYSIS
-            PATTERN_ANALYSIS -> INTERVENTION
-            INTERVENTION -> ACTION_PLANNING
-            ACTION_PLANNING -> CLOSING
-            CLOSING -> null  // 마지막 단계
-        }
-    }
-    
-    /**
-     * 이 단계에서 일반적인 대화 턴 수 (가이드라인)
-     * AI는 이걸 참고만 하고, 실제로는 맥락 보고 판단
-     */
-    fun getTypicalTurns(): IntRange {
-        return when(this) {
-            RAPPORT_BUILDING -> 2..4
-            PROBLEM_EXPLORATION -> 5..8
-            PATTERN_ANALYSIS -> 5..8
-            INTERVENTION -> 5..10
-            ACTION_PLANNING -> 3..5
-            CLOSING -> 2..3
-        }
-    }
+    )
+    // 메서드 제거 - 비즈니스 로직은 UseCase에서 처리
 }
