@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__jetbrains__list_directory_tree_in_folder",
+      "mcp__jetbrains__get_file_text_by_path",
+      "mcp__jetbrains__replace_file_text_by_path",
+      "mcp__jetbrains__replace_specific_text",
+      "mcp__jetbrains__create_new_file_with_text",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

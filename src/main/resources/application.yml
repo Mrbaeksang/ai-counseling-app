@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: ai-counseling-app
+  
+  ai:
+    openai:
+      enabled: false  # Spring AI OpenAI 비활성화
+  
+  security:
+    user:
+      name: admin
+      password: admin
+    
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        
+# OpenRouter 설정
+openrouter:
+  api-key: ${OPENROUTER_API_KEY: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}
+  model: openai/gpt-oss-20b:free  # OpenAI 무료 모델
+  site-url: http://localhost:8080
+  site-name: AI Counseling App
+  
+# 서버 설정
+server:
+  port: 8080
+  
+# 로깅
+logging:
+  level:
+    com.aicounseling: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
