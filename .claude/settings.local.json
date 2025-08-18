@@ -16,7 +16,10 @@
       "mcp__github__get_issue",
       "mcp__notion__notion-create-pages",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "mcp__jetbrains__get_file_text_by_path"
+      "mcp__jetbrains__get_file_text_by_path",
+      "Bash(./gradlew detekt:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

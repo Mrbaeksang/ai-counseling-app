@@ -6,7 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.util.*
+import java.util.Date
 import javax.crypto.SecretKey
 
 @Component
@@ -55,11 +55,16 @@ class JwtTokenProvider(
         return claims["email"] as? String
     }
 
+    @Suppress("SwallowedException") // 토큰 검증 실패는 예외 로깅 없이 false 반환이 정상
     fun validateToken(token: String): Boolean {
         return try {
             getClaims(token)
             true
-        } catch (e: Exception) {
+        } catch (e: io.jsonwebtoken.JwtException) {
+            // JWT 파싱 오류는 정상적인 토큰 검증 실패 케이스
+            false
+        } catch (e: IllegalArgumentException) {
+            // 잘못된 인자 전달 시 토큰 검증 실패로 처리
             false
         }
     }

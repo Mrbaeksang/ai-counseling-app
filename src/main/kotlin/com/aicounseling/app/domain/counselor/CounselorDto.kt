@@ -1,7 +1,5 @@
 package com.aicounseling.app.domain.counselor
 
-import java.time.LocalDateTime
-
 data class CounselorListResponse(
     val id: Long,
     val name: String,
@@ -19,7 +17,7 @@ data class CounselorDetailResponse(
     val personalityMatrix: Map<String, Int>,
     val specialties: List<String>,
     val totalSessions: Int,
-    val averageRating: Double,  // 평균 평점은 유지!
+    val averageRating: Double,
 )
 
 data class CounselorRecommendationResponse(

@@ -10,11 +10,15 @@ import java.time.Duration
 
 @Configuration
 class OpenRouterConfig {
+    companion object {
+        private const val TIMEOUT_SECONDS = 60L
+    }
+
     @Bean
     fun openRouterWebClient(properties: OpenRouterProperties): WebClient {
         val httpClient =
             HttpClient.create()
-                .responseTimeout(Duration.ofSeconds(60)) // 60초 타임아웃
+                .responseTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
 
         return WebClient.builder()
             .baseUrl("https://openrouter.ai/api/v1")

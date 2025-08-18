@@ -6,7 +6,7 @@ plugins {
     kotlin("plugin.jpa") version "1.9.25"
     kotlin("kapt") version "1.9.25" // QueryDSL용
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0" // Kotlin 린터
-    id("io.gitlab.arturbosch.detekt") version "1.23.5" // 코드 품질 분석
+    id("io.gitlab.arturbosch.detekt") version "1.23.6" // 코드 품질 분석
 }
 
 group = "com.aicounseling"
@@ -116,6 +116,15 @@ detekt {
     allRules = false
     config.setFrom("$projectDir/detekt.yml") // 설정 파일 (나중에 생성)
     autoCorrect = true
+}
+
+// Detekt를 위한 별도 Kotlin 컴파일러 버전 설정
+configurations.named("detekt").configure {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion("1.9.23") // detekt 1.23.6이 사용하는 Kotlin 버전
+        }
+    }
 }
 
 // 통합 검사 task

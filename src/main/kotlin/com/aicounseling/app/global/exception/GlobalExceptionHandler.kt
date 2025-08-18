@@ -28,14 +28,14 @@ class GlobalExceptionHandler {
             .status(e.status)
             .body(RsData(e.status.value().toString(), e.message))
     }
-    
+
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFoundException(e: NoSuchElementException): ResponseEntity<RsData<Nothing>> {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(RsData("404", e.message ?: "리소스를 찾을 수 없습니다"))
     }
-    
+
     @ExceptionHandler(IllegalStateException::class)
     fun handleConflictException(e: IllegalStateException): ResponseEntity<RsData<Nothing>> {
         return ResponseEntity
@@ -44,7 +44,9 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception::class)
-    fun handleException(e: Exception): ResponseEntity<RsData<Nothing>> {
+    fun handleException(
+        @Suppress("UNUSED_PARAMETER") e: Exception,
+    ): ResponseEntity<RsData<Nothing>> {
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(RsData("500", "서버 오류가 발생했습니다"))

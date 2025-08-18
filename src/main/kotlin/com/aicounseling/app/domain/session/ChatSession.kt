@@ -1,6 +1,13 @@
 package com.aicounseling.app.domain.session
 
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
@@ -21,12 +28,11 @@ data class ChatSession(
     @Column(nullable = false)
     var phase: CounselingPhase = CounselingPhase.RAPPORT_BUILDING,
     @Column(name = "phase_metadata", columnDefinition = "TEXT")
-    var phaseMetadata: String = "", // AI가 단계 전환한 이유/근거
+    var phaseMetadata: String = "",
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "closed_at")
-    var closedAt: LocalDateTime? = null, // null이면 진행중, 값 있으면 종료됨
-    
+    var closedAt: LocalDateTime? = null,
     @Column(name = "is_bookmarked", nullable = false)
-    var isBookmarked: Boolean = false, // 북마크 여부
+    var isBookmarked: Boolean = false,
 )

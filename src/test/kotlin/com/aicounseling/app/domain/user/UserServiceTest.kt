@@ -13,13 +13,12 @@ import java.util.Optional
 
 @DisplayName("UserService 테스트")
 class UserServiceTest {
-    
     // Mock 객체
     private lateinit var userRepository: UserRepository
-    
+
     // 테스트 대상
     private lateinit var userService: UserService
-    
+
     // 테스트 데이터
     private lateinit var testUser: User
 
@@ -27,14 +26,15 @@ class UserServiceTest {
     fun setUp() {
         userRepository = mockk()
         userService = UserService(userRepository)
-        
-        testUser = User(
-            id = 1L,
-            email = "test@test.com",
-            nickname = "테스트유저",
-            authProvider = AuthProvider.GOOGLE,
-            providerId = "google123"
-        )
+
+        testUser =
+            User(
+                id = 1L,
+                email = "test@test.com",
+                nickname = "테스트유저",
+                authProvider = AuthProvider.GOOGLE,
+                providerId = "google123",
+            )
     }
 
     @Test
@@ -42,10 +42,10 @@ class UserServiceTest {
     fun getUser_success() {
         // given
         every { userRepository.findById(1L) } returns Optional.of(testUser)
-        
+
         // when
         val result = userService.getUser(1L)
-        
+
         // then
         assertThat(result.id).isEqualTo(1L)
         assertThat(result.email).isEqualTo("test@test.com")
@@ -58,7 +58,7 @@ class UserServiceTest {
     fun getUser_notFound() {
         // given
         every { userRepository.findById(999L) } returns Optional.empty()
-        
+
         // when & then
         assertThatThrownBy { userService.getUser(999L) }
             .isInstanceOf(NoSuchElementException::class.java)
@@ -71,13 +71,13 @@ class UserServiceTest {
         // given
         val newNickname = "새닉네임"
         val updatedUser = testUser.copy(nickname = newNickname)
-        
+
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
-        
+
         // when
         val result = userService.changeNickname(1L, newNickname)
-        
+
         // then
         assertThat(result.nickname).isEqualTo(newNickname)
         verify { userRepository.save(any()) }
@@ -88,7 +88,7 @@ class UserServiceTest {
     fun changeNickname_tooShort() {
         // given
         val shortNickname = "a"
-        
+
         // when & then
         assertThatThrownBy { userService.changeNickname(1L, shortNickname) }
             .isInstanceOf(IllegalArgumentException::class.java)
@@ -100,7 +100,7 @@ class UserServiceTest {
     fun changeNickname_tooLong() {
         // given
         val longNickname = "a".repeat(21)
-        
+
         // when & then
         assertThatThrownBy { userService.changeNickname(1L, longNickname) }
             .isInstanceOf(IllegalArgumentException::class.java)
@@ -112,7 +112,7 @@ class UserServiceTest {
     fun changeNickname_userNotFound() {
         // given
         every { userRepository.findById(999L) } returns Optional.empty()
-        
+
         // when & then
         assertThatThrownBy { userService.changeNickname(999L, "새닉네임") }
             .isInstanceOf(NoSuchElementException::class.java)
@@ -124,10 +124,10 @@ class UserServiceTest {
     fun findByEmail_success() {
         // given
         every { userRepository.findByEmail("test@test.com") } returns testUser
-        
+
         // when
         val result = userService.findByEmail("test@test.com")
-        
+
         // then
         assertThat(result).isNotNull
         assertThat(result?.email).isEqualTo("test@test.com")
@@ -138,10 +138,10 @@ class UserServiceTest {
     fun findByEmail_notFound() {
         // given
         every { userRepository.findByEmail("notfound@test.com") } returns null
-        
+
         // when
         val result = userService.findByEmail("notfound@test.com")
-        
+
         // then
         assertThat(result).isNull()
     }
@@ -151,7 +151,7 @@ class UserServiceTest {
     fun changeNickname_onlySpaces() {
         // given
         val spacesNickname = "   "
-        
+
         // when & then
         assertThatThrownBy { userService.changeNickname(1L, spacesNickname) }
             .isInstanceOf(IllegalArgumentException::class.java)
@@ -164,13 +164,13 @@ class UserServiceTest {
         // given
         val specialNickname = "테스트@123!"
         val updatedUser = testUser.copy(nickname = specialNickname)
-        
+
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
-        
+
         // when
         val result = userService.changeNickname(1L, specialNickname)
-        
+
         // then
         assertThat(result.nickname).isEqualTo(specialNickname)
     }
@@ -181,13 +181,13 @@ class UserServiceTest {
         // given
         val emojiNickname = "테스트😀👍"
         val updatedUser = testUser.copy(nickname = emojiNickname)
-        
+
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
-        
+
         // when
         val result = userService.changeNickname(1L, emojiNickname)
-        
+
         // then
         assertThat(result.nickname).isEqualTo(emojiNickname)
     }
@@ -197,13 +197,13 @@ class UserServiceTest {
     fun changeNickname_sameNickname() {
         // given
         val sameNickname = testUser.nickname
-        
+
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns testUser
-        
+
         // when
         val result = userService.changeNickname(1L, sameNickname)
-        
+
         // then
         assertThat(result.nickname).isEqualTo(sameNickname)
         verify { userRepository.save(any()) }

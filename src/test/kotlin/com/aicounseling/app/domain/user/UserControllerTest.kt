@@ -9,8 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
 
 @SpringBootTest
@@ -80,7 +82,7 @@ class UserControllerTest {
         mockMvc.perform(
             patch("/api/users/nickname")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nickname": "새닉네임"}""")
+                .content("""{"nickname": "새닉네임"}"""),
         )
             .andExpect(status().isUnauthorized)
     }
@@ -97,7 +99,7 @@ class UserControllerTest {
             patch("/api/users/nickname")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nickname": "a"}""")
+                .content("""{"nickname": "a"}"""),
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.msg").value("입력값이 올바르지 않습니다"))
@@ -116,7 +118,7 @@ class UserControllerTest {
             patch("/api/users/nickname")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nickname": "$longNickname"}""")
+                .content("""{"nickname": "$longNickname"}"""),
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.msg").value("입력값이 올바르지 않습니다"))
@@ -128,7 +130,7 @@ class UserControllerTest {
         // When & Then
         mockMvc.perform(
             get("/api/users/me")
-                .header("Authorization", "Bearer invalid.token.here")
+                .header("Authorization", "Bearer invalid.token.here"),
         )
             .andExpect(status().isUnauthorized)
     }
@@ -143,7 +145,7 @@ class UserControllerTest {
         // When & Then
         mockMvc.perform(
             get("/api/users/me")
-                .header("Authorization", token)  // Bearer 없이
+                .header("Authorization", token),
         )
             .andExpect(status().isUnauthorized)
     }
@@ -161,7 +163,7 @@ class UserControllerTest {
             patch("/api/users/nickname")
                 .header("Authorization", "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"nickname": "$emojiNickname"}""")
+                .content("""{"nickname": "$emojiNickname"}"""),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.nickname").value(emojiNickname))

@@ -21,5 +21,6 @@ fun main(args: Array<String>) {
         System.setProperty(entry.key, entry.value)
     }
 
+    @Suppress("SpreadOperator") // Spring Boot에서 필수적으로 사용
     runApplication<AiCounselingApplication>(*args)
 }

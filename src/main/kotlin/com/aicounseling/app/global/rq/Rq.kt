@@ -15,8 +15,12 @@ import org.springframework.web.context.annotation.RequestScope
 @RequestScope
 class Rq(
     private val request: HttpServletRequest,
-    private val response: HttpServletResponse,
+    @Suppress("unused") private val response: HttpServletResponse,
 ) {
+    companion object {
+        private const val BEARER_PREFIX_LENGTH = 7
+    }
+
     /**
      * 현재 로그인한 사용자 정보
      */
@@ -55,7 +59,7 @@ class Rq(
         get() {
             val bearerToken = getHeader("Authorization")
             if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-                return bearerToken.substring(7)
+                return bearerToken.substring(BEARER_PREFIX_LENGTH)
             }
             return null
         }

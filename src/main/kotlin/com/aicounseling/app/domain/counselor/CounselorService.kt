@@ -23,7 +23,7 @@ class CounselorService(
     private val counselorRepository: CounselorRepository,
     private val favoriteCounselorRepository: FavoriteCounselorRepository,
     private val sessionRepository: ChatSessionRepository,
-    private val ratingRepository: CounselorRatingRepository, // 추가!
+    private val ratingRepository: CounselorRatingRepository,
     private val objectMapper: ObjectMapper,
 ) {
     /**
@@ -109,8 +109,8 @@ class CounselorService(
             }
 
         // 중복 체크
-        if (favoriteCounselorRepository.existsByUserAndCounselor(user, counselor)) {
-            throw IllegalStateException("이미 즐겨찾기한 상담사입니다")
+        check(!favoriteCounselorRepository.existsByUserAndCounselor(user, counselor)) {
+            "이미 즐겨찾기한 상담사입니다"
         }
 
         val favorite =
@@ -119,7 +119,7 @@ class CounselorService(
                 counselor = counselor,
             )
         favoriteCounselorRepository.save(favorite)
-        
+
         return counselor
     }
 
@@ -137,7 +137,7 @@ class CounselorService(
                 NoSuchElementException("상담사를 찾을 수 없습니다: $counselorId")
             }
         favoriteCounselorRepository.deleteByUserAndCounselor(user, counselor)
-        
+
         return counselor
     }
 

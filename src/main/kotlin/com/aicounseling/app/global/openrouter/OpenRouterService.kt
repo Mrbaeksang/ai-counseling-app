@@ -8,6 +8,12 @@ class OpenRouterService(
     private val webClient: WebClient,
     private val properties: OpenRouterProperties,
 ) {
+    companion object {
+        private const val API_KEY_PREVIEW_LENGTH = 10
+        private const val DEFAULT_MAX_TOKENS = 2000
+        private const val DEFAULT_TEMPERATURE = 0.7
+    }
+
     suspend fun sendMessage(
         message: String,
         systemPrompt: String? = null,
@@ -50,12 +56,12 @@ class OpenRouterService(
             ChatRequest(
                 model = properties.model,
                 messages = messages,
-                temperature = 0.7,
-                max_tokens = 2000, // 상담 답변 충분하게
+                temperature = DEFAULT_TEMPERATURE,
+                max_tokens = DEFAULT_MAX_TOKENS,
             )
 
         println("Sending request to OpenRouter: ${request.model}")
-        println("API Key: ${properties.apiKey.take(10)}...")
+        println("API Key: ${properties.apiKey.take(API_KEY_PREVIEW_LENGTH)}...")
 
         return webClient.post()
             .uri("/chat/completions")
@@ -74,7 +80,7 @@ data class ChatRequest(
     val model: String,
     val messages: List<Message>,
     val temperature: Double = 0.7,
-    val max_tokens: Int? = null,
+    @Suppress("ConstructorParameterNaming") val max_tokens: Int? = null,
     val stream: Boolean = false,
 )
 
@@ -92,11 +98,11 @@ data class ChatResponse(
 data class Choice(
     val index: Int,
     val message: Message,
-    val finish_reason: String? = null,
+    @Suppress("ConstructorParameterNaming") val finish_reason: String? = null,
 )
 
 data class Usage(
-    val prompt_tokens: Int,
-    val completion_tokens: Int,
-    val total_tokens: Int,
+    @Suppress("ConstructorParameterNaming") val prompt_tokens: Int,
+    @Suppress("ConstructorParameterNaming") val completion_tokens: Int,
+    @Suppress("ConstructorParameterNaming") val total_tokens: Int,
 )

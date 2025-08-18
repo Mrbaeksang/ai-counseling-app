@@ -33,8 +33,8 @@ class ChatSessionService(
                 IllegalArgumentException("세션을 찾을 수 없습니다: $sessionId")
             }
 
-        if (session.closedAt != null) {
-            throw IllegalStateException("이미 종료된 세션입니다")
+        check(session.closedAt == null) {
+            "이미 종료된 세션입니다"
         }
 
         session.closedAt = LocalDateTime.now()
@@ -52,8 +52,8 @@ class ChatSessionService(
                 IllegalArgumentException("세션을 찾을 수 없습니다: $sessionId")
             }
 
-        if (session.closedAt != null) {
-            throw IllegalStateException("종료된 세션은 단계를 변경할 수 없습니다")
+        check(session.closedAt == null) {
+            "종료된 세션은 단계를 변경할 수 없습니다"
         }
 
         session.phase = newPhase

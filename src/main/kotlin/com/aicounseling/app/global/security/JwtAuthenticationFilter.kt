@@ -21,13 +21,14 @@ class JwtAuthenticationFilter(
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
             val userId = jwtTokenProvider.getUserIdFromToken(token)
-            val email = jwtTokenProvider.getEmailFromToken(token)
+            // email은 현재 사용하지 않지만, 추후 권한 처리 시 필요할 수 있음
+            // val email = jwtTokenProvider.getEmailFromToken(token)
 
             val authentication =
                 UsernamePasswordAuthenticationToken(
                     userId,
                     null,
-                    emptyList(), // 권한은 나중에 추가
+                    emptyList(),
                 )
 
             SecurityContextHolder.getContext().authentication = authentication
@@ -38,8 +39,9 @@ class JwtAuthenticationFilter(
 
     private fun extractToken(request: HttpServletRequest): String? {
         val bearerToken = request.getHeader("Authorization")
-        return if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            bearerToken.substring(7)
+        val bearerPrefix = "Bearer "
+        return if (bearerToken != null && bearerToken.startsWith(bearerPrefix)) {
+            bearerToken.substring(bearerPrefix.length)
         } else {
             null
         }

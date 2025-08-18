@@ -1,7 +1,14 @@
 package com.aicounseling.app.domain.user
 
 import com.aicounseling.app.global.security.AuthProvider
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 /**
@@ -22,9 +29,9 @@ data class User(
     @Column(name = "auth_provider", nullable = false, length = 20)
     val authProvider: AuthProvider,
     @Column(name = "provider_id", nullable = false)
-    val providerId: String, // Google/Kakao/Naver에서 제공하는 고유 ID
+    val providerId: String,
     @Column(name = "profile_image_url", length = 500)
-    var profileImageUrl: String? = null, // OAuth에서 받은 프로필 이미지 URL
+    var profileImageUrl: String? = null,
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
     @Column(name = "created_at", nullable = false)

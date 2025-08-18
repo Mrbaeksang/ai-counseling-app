@@ -1,6 +1,7 @@
 package com.aicounseling.app.domain.auth
 
 import com.aicounseling.app.global.exception.UnauthorizedException
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
@@ -26,7 +27,7 @@ class GoogleTokenVerifier(
             .retrieve()
             .bodyToMono(GoogleTokenInfo::class.java)
             .map { info ->
-                if (info.email_verified != true) {
+                if (info.emailVerified != true) {
                     throw UnauthorizedException("이메일 인증이 필요합니다")
                 }
                 OAuthUserInfo(
@@ -40,9 +41,10 @@ class GoogleTokenVerifier(
     }
 
     data class GoogleTokenInfo(
-        val sub: String, // Google User ID
+        val sub: String,
         val email: String,
-        val email_verified: Boolean?,
+        @JsonProperty("email_verified")
+        val emailVerified: Boolean?,
         val name: String?,
     )
 }
@@ -70,7 +72,7 @@ class KakaoTokenVerifier(
 
     data class KakaoUserInfo(
         val id: Long,
-        val kakao_account: KakaoAccount?,
+        @Suppress("ConstructorParameterNaming") val kakao_account: KakaoAccount?,
     )
 
     data class KakaoAccount(

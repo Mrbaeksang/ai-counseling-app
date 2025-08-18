@@ -1,40 +1,42 @@
 package com.aicounseling.app.domain.user
 
-import com.aicounseling.app.global.exception.NotFoundException
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/users")
 class UserController(
-    private val userService: UserService, // 생성자 주입으로 서비스 받기
+    private val userService: UserService,
 ) {
     /**
-     * 현재 로그인한 사용자 정보 조회
+     * ?�재 로그?�한 ?�용???�보 조회
      */
     @GetMapping("/me")
     fun getMyInfo(
-        @AuthenticationPrincipal userId: Long, // JWT에서 추출한 userId
+        @AuthenticationPrincipal userId: Long,
     ): RsData<UserResponse> {
-        val user = userService.getUser(userId)  // 예외는 Service가 던짐
-        
+        val user = userService.getUser(userId) // ?�외??Service가 ?�짐
+
         return RsData.of(
             "200",
-            "조회 성공",
+            "조회 ?�공",
             UserResponse.from(user),
         )
     }
 
     /**
-     * 닉네임 변경
-     */
+     * ?�네??변�?     */
     @PatchMapping("/nickname")
     fun updateNickname(
         @AuthenticationPrincipal userId: Long,
-        @Valid @RequestBody request: NicknameUpdateRequest, // request는 내가 정한 변수명
-    ): RsData<UserResponse> { // Mono 제거!
+        @Valid @RequestBody request: NicknameUpdateRequest,
+    ): RsData<UserResponse> { // Mono ?�거!
         val updatedUser =
             userService.changeNickname(
                 userId,
@@ -43,7 +45,7 @@ class UserController(
 
         return RsData.of(
             "200",
-            "닉네임 변경 성공",
+            "?�네??변�??�공",
             UserResponse.from(updatedUser),
         )
     }
