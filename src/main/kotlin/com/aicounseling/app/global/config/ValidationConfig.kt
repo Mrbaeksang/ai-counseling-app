@@ -7,12 +7,11 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 
 @Configuration
 class ValidationConfig {
-    
     @Bean
     fun validator(): LocalValidatorFactoryBean {
         return LocalValidatorFactoryBean()
     }
-    
+
     @Bean
     fun methodValidationPostProcessor(): MethodValidationPostProcessor {
         return MethodValidationPostProcessor().apply {

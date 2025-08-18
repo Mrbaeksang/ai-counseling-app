@@ -275,19 +275,30 @@ POST /api/auth/refresh         # JWT 토큰 갱신 (예정)
 POST /api/auth/logout          # 로그아웃 (예정)
 ```
 
-### 7.2 상담사 API
+### 7.2 사용자 API
 ```http
-GET /api/v1/counselors              # 상담사 목록
-GET /api/v1/counselors/{id}         # 상담사 상세
-GET /api/v1/counselors/specialty/{tag}  # 전문분야별
+GET /api/users/me                   # 내 정보 조회
+PATCH /api/users/nickname           # 닉네임 변경
 ```
 
-### 7.3 채팅 API
+### 7.3 상담사 API
 ```http
-POST /api/v1/chat/session           # 세션 시작
-POST /api/v1/chat/message           # 메시지 전송
-GET /api/v1/chat/session/{id}       # 세션 조회
-DELETE /api/v1/chat/session/{id}    # 세션 종료
+GET /api/counselors                 # 상담사 목록
+GET /api/counselors/{id}            # 상담사 상세
+GET /api/counselors/favorites       # 즐겨찾기 목록
+POST /api/counselors/{id}/favorite  # 즐겨찾기 추가
+DELETE /api/counselors/{id}/favorite # 즐겨찾기 제거
+GET /api/counselors/{id}/ratings    # 평가 목록 조회
+```
+
+### 7.4 세션 API
+```http
+POST /api/sessions                  # 세션 시작 (상담 시작)
+GET /api/sessions/{id}              # 세션 조회
+POST /api/sessions/{id}/messages    # 메시지 전송
+GET /api/sessions/{id}/messages     # 메시지 목록
+POST /api/sessions/{id}/close       # 세션 종료
+POST /api/sessions/{id}/rating      # 평가 남기기
 ```
 
 ## 8. 배포 아키텍처

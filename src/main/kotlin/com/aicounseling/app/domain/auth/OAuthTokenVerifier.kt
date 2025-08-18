@@ -13,14 +13,13 @@ data class OAuthUserInfo(
     val providerId: String,
     val email: String,
     val name: String?,
-    val provider: String
+    val provider: String,
 )
 
 @Service
 class GoogleTokenVerifier(
-    private val webClient: WebClient
+    private val webClient: WebClient,
 ) : OAuthTokenVerifier {
-    
     override fun verifyToken(token: String): Mono<OAuthUserInfo> {
         return webClient.get()
             .uri("https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=$token")
@@ -34,25 +33,24 @@ class GoogleTokenVerifier(
                     providerId = info.sub,
                     email = info.email,
                     name = info.name,
-                    provider = "GOOGLE"
+                    provider = "GOOGLE",
                 )
             }
             .onErrorMap { UnauthorizedException("유효하지 않은 Google 토큰입니다") }
     }
-    
+
     data class GoogleTokenInfo(
-        val sub: String,  // Google User ID
+        val sub: String, // Google User ID
         val email: String,
         val email_verified: Boolean?,
-        val name: String?
+        val name: String?,
     )
 }
 
 @Service
 class KakaoTokenVerifier(
-    private val webClient: WebClient
+    private val webClient: WebClient,
 ) : OAuthTokenVerifier {
-    
     override fun verifyToken(token: String): Mono<OAuthUserInfo> {
         return webClient.get()
             .uri("https://kapi.kakao.com/v2/user/me")
@@ -64,32 +62,31 @@ class KakaoTokenVerifier(
                     providerId = info.id.toString(),
                     email = info.kakao_account?.email ?: throw UnauthorizedException("이메일 정보가 없습니다"),
                     name = info.kakao_account?.profile?.nickname,
-                    provider = "KAKAO"
+                    provider = "KAKAO",
                 )
             }
             .onErrorMap { UnauthorizedException("유효하지 않은 Kakao 토큰입니다") }
     }
-    
+
     data class KakaoUserInfo(
         val id: Long,
-        val kakao_account: KakaoAccount?
+        val kakao_account: KakaoAccount?,
     )
-    
+
     data class KakaoAccount(
         val email: String?,
-        val profile: KakaoProfile?
+        val profile: KakaoProfile?,
     )
-    
+
     data class KakaoProfile(
-        val nickname: String?
+        val nickname: String?,
     )
 }
 
 @Service
 class NaverTokenVerifier(
-    private val webClient: WebClient
+    private val webClient: WebClient,
 ) : OAuthTokenVerifier {
-    
     override fun verifyToken(token: String): Mono<OAuthUserInfo> {
         return webClient.get()
             .uri("https://openapi.naver.com/v1/nid/me")
@@ -102,19 +99,19 @@ class NaverTokenVerifier(
                     providerId = info.id,
                     email = info.email ?: throw UnauthorizedException("이메일 정보가 없습니다"),
                     name = info.name,
-                    provider = "NAVER"
+                    provider = "NAVER",
                 )
             }
             .onErrorMap { UnauthorizedException("유효하지 않은 Naver 토큰입니다") }
     }
-    
+
     data class NaverUserResponse(
-        val response: NaverUserInfo
+        val response: NaverUserInfo,
     )
-    
+
     data class NaverUserInfo(
         val id: String,
         val email: String?,
-        val name: String?
+        val name: String?,
     )
 }

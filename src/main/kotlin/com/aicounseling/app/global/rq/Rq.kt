@@ -15,9 +15,8 @@ import org.springframework.web.context.annotation.RequestScope
 @RequestScope
 class Rq(
     private val request: HttpServletRequest,
-    private val response: HttpServletResponse
+    private val response: HttpServletResponse,
 ) {
-    
     /**
      * 현재 로그인한 사용자 정보
      */
@@ -29,26 +28,26 @@ class Rq(
             }
             return null
         }
-    
+
     /**
      * 로그인 여부
      */
     val isLogin: Boolean
         get() = user != null
-    
+
     /**
      * 관리자 여부
      */
     val isAdmin: Boolean
         get() = user?.email?.contains("admin") ?: false
-    
+
     /**
      * 요청 헤더 가져오기
      */
     fun getHeader(name: String): String? {
         return request.getHeader(name)
     }
-    
+
     /**
      * JWT 토큰 추출 (Bearer 제거)
      */

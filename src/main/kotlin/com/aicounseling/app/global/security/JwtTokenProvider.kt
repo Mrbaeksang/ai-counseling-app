@@ -5,7 +5,6 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
 import java.util.*
 import javax.crypto.SecretKey
@@ -14,11 +13,14 @@ import javax.crypto.SecretKey
 class JwtTokenProvider(
     @Value("\${jwt.secret}") private val secret: String,
     @Value("\${jwt.expiration}") private val expiration: Long,
-    @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long
+    @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long,
 ) {
     private val key: SecretKey = Keys.hmacShaKeyFor(secret.toByteArray())
 
-    fun createToken(userId: Long, email: String): String {
+    fun createToken(
+        userId: Long,
+        email: String,
+    ): String {
         val now = Date()
         val expiryDate = Date(now.time + expiration)
 

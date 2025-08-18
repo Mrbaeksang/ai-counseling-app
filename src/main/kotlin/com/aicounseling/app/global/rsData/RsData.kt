@@ -9,32 +9,42 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 data class RsData<T>(
     val resultCode: String,
     val msg: String,
-    val data: T? = null
+    val data: T? = null,
 ) {
     @JsonIgnore
     fun isSuccess(): Boolean = resultCode.startsWith("S-")
-    
+
     @JsonIgnore
     fun isFail(): Boolean = !isSuccess()
-    
+
     companion object {
-        fun <T> of(resultCode: String, msg: String, data: T? = null): RsData<T> {
+        fun <T> of(
+            resultCode: String,
+            msg: String,
+            data: T? = null,
+        ): RsData<T> {
             return RsData(resultCode, msg, data)
         }
-        
+
         fun <T> success(data: T? = null): RsData<T> {
             return of("S-1", "성공", data)
         }
-        
-        fun <T> success(msg: String, data: T? = null): RsData<T> {
+
+        fun <T> success(
+            msg: String,
+            data: T? = null,
+        ): RsData<T> {
             return of("S-1", msg, data)
         }
-        
+
         fun <T> fail(msg: String): RsData<T> {
             return of("F-1", msg, null)
         }
-        
-        fun <T> fail(resultCode: String, msg: String): RsData<T> {
+
+        fun <T> fail(
+            resultCode: String,
+            msg: String,
+        ): RsData<T> {
             return of(resultCode, msg, null)
         }
     }

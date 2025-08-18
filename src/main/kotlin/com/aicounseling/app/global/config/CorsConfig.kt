@@ -11,19 +11,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @Configuration
 @EnableConfigurationProperties(CorsProperties::class)
 class CorsConfig(
-    private val corsProperties: CorsProperties
+    private val corsProperties: CorsProperties,
 ) {
-    
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
-        val configuration = CorsConfiguration().apply {
-            allowedOriginPatterns = corsProperties.allowedOrigins
-            allowedMethods = corsProperties.allowedMethods
-            allowedHeaders = corsProperties.allowedHeaders
-            allowCredentials = corsProperties.allowCredentials
-            maxAge = corsProperties.maxAge
-        }
-        
+        val configuration =
+            CorsConfiguration().apply {
+                allowedOriginPatterns = corsProperties.allowedOrigins
+                allowedMethods = corsProperties.allowedMethods
+                allowedHeaders = corsProperties.allowedHeaders
+                allowCredentials = corsProperties.allowCredentials
+                maxAge = corsProperties.maxAge
+            }
+
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", configuration)
         return source
@@ -36,5 +36,5 @@ data class CorsProperties(
     val allowedMethods: List<String> = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS"),
     val allowedHeaders: List<String> = listOf("*"),
     val allowCredentials: Boolean = true,
-    val maxAge: Long = 3600
+    val maxAge: Long = 3600,
 )

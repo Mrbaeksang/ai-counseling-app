@@ -16,11 +16,11 @@ abstract class BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
-    
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     lateinit var createdAt: LocalDateTime
-    
+
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     lateinit var updatedAt: LocalDateTime

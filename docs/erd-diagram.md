@@ -13,16 +13,18 @@ erDiagram
     counselors ||--o{ counselor_ratings : "rated_by"
     
     chat_sessions ||--o{ messages : "contains"
-    chat_sessions ||--o| session_summaries : "has"
     
     users {
         bigint id PK
         varchar email UK
         varchar nickname
-        text preference_matrix "JSON: 사용자 선호 성향"
-        boolean onboarding_completed
+        varchar auth_provider "GOOGLE/KAKAO/NAVER"
+        varchar provider_id "OAuth 제공자 ID"
+        varchar profile_image_url
+        boolean is_active
         timestamp created_at
         timestamp updated_at
+        timestamp last_login_at
     }
     
     counselors {
@@ -44,6 +46,7 @@ erDiagram
         enum phase "RAPPORT/EXPLORATION/ANALYSIS/INTERVENTION/PLANNING/CLOSING"
         text phase_metadata "AI가 판단한 현재 상태"
         boolean closing_suggested
+        boolean is_bookmarked "세션 북마크"
         timestamp created_at
         timestamp last_message_at
     }
@@ -54,16 +57,6 @@ erDiagram
         enum sender_type "USER/AI"
         text content
         text ai_phase_assessment "AI가 판단한 단계 정보"
-        boolean is_bookmarked
-        timestamp created_at
-    }
-    
-    session_summaries {
-        bigint id PK
-        bigint session_id FK
-        text key_insights "핵심 통찰"
-        text emotional_state "감정 변화"
-        text next_steps "다음 논의 사항"
         timestamp created_at
     }
     
@@ -79,7 +72,7 @@ erDiagram
         bigint user_id FK
         bigint counselor_id FK
         bigint session_id FK
-        integer rating "1-5"
+        decimal rating "0.5-5.0, 0.5 단위"
         text review
         timestamp created_at
     }
@@ -89,12 +82,10 @@ erDiagram
 
 ### 1. users
 - 사용자 정보 저장
-- `preference_matrix`: 사용자의 상담 선호 성향 (JSON)
-  - logical: 논리적 vs 감성적 (0-100)
-  - directness: 직설적 vs 완곡한 (0-100)
-  - solutionFocus: 해결중심 vs 공감중심 (0-100)
-  - formalityLevel: 격식있는 vs 친근한 (0-100)
-- `onboarding_completed`: 온보딩 완료 여부
+- `auth_provider`: OAuth 제공자 (Google/Kakao/Naver)
+- `provider_id`: OAuth 제공자가 주는 고유 ID
+- `profile_image_url`: OAuth에서 가져온 프로필 이미지
+- `is_active`: 계정 활성화 상태
 
 ### 2. counselors
 - 상담사(AI 페르소나) 정보
@@ -113,22 +104,18 @@ erDiagram
   - CLOSING: 마무리
 - `phase_metadata`: AI의 현재 판단 상태
 - `closing_suggested`: 마무리 제안 여부
+- `is_bookmarked`: 사용자가 북마크한 세션
 
 ### 4. messages
 - 개별 메시지 저장
 - `ai_phase_assessment`: AI가 각 메시지마다 판단한 단계 정보
-- `is_bookmarked`: 사용자가 중요 표시한 메시지
+- `sender_type`: 메시지 발신자 (USER/AI)
 
-### 5. session_summaries
-- 세션 종료 시 AI가 생성하는 요약
-- 다음 대화 시 연속성 유지를 위해 사용
-- 사용자가 요약을 원할 때만 상세 요약 생성
-
-### 6. user_favorite_counselors
+### 5. user_favorite_counselors
 - 사용자가 즐겨찾기한 상담사
 - 빠른 접근을 위한 매핑 테이블
 
-### 7. counselor_ratings
+### 6. counselor_ratings
 - 세션 종료 후 상담사 평가
 - 매칭 알고리즘 개선에 활용
 
@@ -145,8 +132,8 @@ CREATE INDEX idx_ratings_counselor_id ON counselor_ratings(counselor_id);
 
 ## 주요 변경사항
 
-1. **태그 시스템 제거**: concern_tags, counselor_tags 등 복잡한 태그 시스템 삭제
-2. **매트릭스 기반 매칭**: JSON 필드로 성격/선호도 매트릭스 저장
-3. **AI 자율 판단**: 상담 단계를 AI가 맥락을 보고 자동 판단
-4. **세션 요약**: 연속성 있는 상담을 위한 요약 테이블 추가
-5. **심플한 구조**: 불필요한 조인 최소화, 성능 최적화
+1. **OAuth 기반 인증**: Google/Kakao/Naver OAuth만 사용
+2. **세션 북마크**: 개별 메시지가 아닌 세션 단위 북마크
+3. **세션 요약 제거**: 과도한 기능 제거로 MVP 단순화
+4. **사용자 선호도 제거**: preference_matrix 제거, AI 도우미가 추천
+5. **심플한 구조**: 핵심 기능만 남기고 단순화

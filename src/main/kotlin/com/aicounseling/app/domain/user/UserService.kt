@@ -1,47 +1,51 @@
 package com.aicounseling.app.domain.user
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
+/**
+ * UserService - 사용자 비즈니스 로직
+ * 
+ * API 명세서 매핑:
+ * - GET /users/me → getUser()
+ * - PATCH /users/nickname → changeNickname()
+ */
 @Service
-@Transactional
+@Transactional(readOnly = true)
 class UserService(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
 ) {
-    
-    fun processLogin(userId: Long): User {
-        val user = userRepository.findById(userId).orElseThrow {
-            IllegalArgumentException("사용자를 찾을 수 없습니다: $userId")
+    /**
+     * GET /users/me 지원 - 사용자 조회
+     * @throws NoSuchElementException 사용자 없을 때
+     */
+    fun getUser(userId: Long): User {
+        return userRepository.findById(userId).orElseThrow {
+            NoSuchElementException("사용자를 찾을 수 없습니다: $userId")
         }
-        
-        user.lastLoginAt = LocalDateTime.now()
-        
-        return userRepository.save(user)
     }
-    
+
+    /**
+     * PATCH /users/nickname - 닉네임 변경
+     * @throws IllegalArgumentException 닉네임 길이 제한
+     * @throws NoSuchElementException 사용자 없을 때
+     */
+    @Transactional
     fun changeNickname(userId: Long, newNickname: String): User {
-        require(newNickname.length in 2..20) { 
-            "닉네임은 2자 이상 20자 이하여야 합니다" 
+        val trimmedNickname = newNickname.trim()
+        require(trimmedNickname.length in 2..20) {
+            "닉네임은 2자 이상 20자 이하여야 합니다"
         }
-        
-        val user = userRepository.findById(userId).orElseThrow {
-            IllegalArgumentException("사용자를 찾을 수 없습니다: $userId")
-        }
-        
-        user.nickname = newNickname
+
+        val user = getUser(userId)  // 위 메서드 재사용
+        user.nickname = trimmedNickname
         
         return userRepository.save(user)
     }
     
-    // OAuth 인증을 통해서만 사용자 생성 (AuthService에서 처리)
-    // createUser는 제거됨
-    
-    @Transactional(readOnly = true)
-    fun findById(userId: Long): User? {
-        return userRepository.findById(userId).orElse(null)
-    }
-    
-    @Transactional(readOnly = true)
+    /**
+     * OAuth 로그인시 이메일로 사용자 찾기 (AuthService용)
+     * null 반환 = 신규 가입 필요
+     */
     fun findByEmail(email: String): User? {
         return userRepository.findByEmail(email)
     }

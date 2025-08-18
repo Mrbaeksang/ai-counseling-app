@@ -14,15 +14,13 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfigurationSource
 
-
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val objectMapper: ObjectMapper,
-    private val corsConfigurationSource: CorsConfigurationSource
+    private val corsConfigurationSource: CorsConfigurationSource,
 ) {
-
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -35,7 +33,10 @@ class SecurityConfig(
                     .requestMatchers("/actuator/health").permitAll()
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
-                    // Protected endpoints
+                    // Public counselor endpoints (목록, 상세 조회는 인증 불필요)
+                    .requestMatchers("GET", "/api/counselors").permitAll()
+                    .requestMatchers("GET", "/api/counselors/*").permitAll()
+                    // Protected endpoints (나머지 /api/** 는 인증 필요)
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             }
@@ -49,9 +50,9 @@ class SecurityConfig(
                             objectMapper.writeValueAsString(
                                 mapOf(
                                     "resultCode" to "401",
-                                    "msg" to "인증이 필요합니다"
-                                )
-                            )
+                                    "msg" to "인증이 필요합니다",
+                                ),
+                            ),
                         )
                     }
                     .accessDeniedHandler { _, response, _ ->
@@ -61,14 +62,14 @@ class SecurityConfig(
                             objectMapper.writeValueAsString(
                                 mapOf(
                                     "resultCode" to "403",
-                                    "msg" to "권한이 없습니다"
-                                )
-                            )
+                                    "msg" to "권한이 없습니다",
+                                ),
+                            ),
                         )
                     }
             }
             .headers { headers ->
-                headers.frameOptions { it.sameOrigin() }  // H2 Console을 위해
+                headers.frameOptions { it.sameOrigin() } // H2 Console을 위해
             }
 
         return http.build()

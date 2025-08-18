@@ -8,9 +8,18 @@
       "mcp__github__get_file_contents",
       "mcp__jetbrains__list_files_in_folder",
       "mcp__filesystem__directory_tree",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(npx:*)",
+      "mcp__github__search_code",
+      "mcp__github__search_repositories",
+      "WebSearch",
+      "mcp__github__get_issue",
+      "mcp__notion__notion-create-pages",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__jetbrains__get_file_text_by_path"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "Learning"
 }
