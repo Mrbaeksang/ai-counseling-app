@@ -1,6 +1,6 @@
 package com.aicounseling.app.global.rq
 
-import com.aicounseling.app.domain.user.User
+import com.aicounseling.app.domain.user.entity.User
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder

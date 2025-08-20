@@ -43,12 +43,14 @@ erDiagram
         bigint id PK
         bigint user_id FK
         bigint counselor_id FK
+        varchar title "세션 제목 (첫 메시지 기반 자동 생성, 수정 가능)"
         enum phase "RAPPORT/EXPLORATION/ANALYSIS/INTERVENTION/PLANNING/CLOSING"
         text phase_metadata "AI가 판단한 현재 상태"
         boolean closing_suggested
         boolean is_bookmarked "세션 북마크"
         timestamp created_at
         timestamp last_message_at
+        timestamp closed_at "세션 종료 시간 (null = 진행중)"
     }
     
     messages {
@@ -95,6 +97,7 @@ erDiagram
 
 ### 3. chat_sessions
 - 사용자와 상담사 간의 대화 세션
+- `title`: 세션 제목 (첫 메시지 기반 자동 생성, 사용자 수정 가능)
 - `phase`: AI가 자율적으로 판단하는 상담 단계
   - RAPPORT_BUILDING: 라포 형성
   - PROBLEM_EXPLORATION: 문제 탐색

@@ -1,5 +1,8 @@
 package com.aicounseling.app.domain.user
 
+import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.domain.user.repository.UserRepository
+import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -174,7 +177,7 @@ class UserControllerTest {
             User(
                 email = "test@test.com",
                 nickname = "테스트유저",
-                authProvider = com.aicounseling.app.global.security.AuthProvider.GOOGLE,
+                authProvider = AuthProvider.GOOGLE,
                 providerId = "google123",
             )
         return userRepository.save(user)

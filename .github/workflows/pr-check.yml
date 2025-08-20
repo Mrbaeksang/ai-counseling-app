@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  lint:
+  lint-and-analyze:
     runs-on: ubuntu-latest
     
     steps:
@@ -17,23 +17,114 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
     
+    - name: Gradle 캐시
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
     - name: Gradle 권한 설정
       run: chmod +x gradlew
     
-    - name: 코드 스타일 체크 (나중에 ktlint 추가)
-      run: echo "ktlint 체크 예정"
+    - name: ktlint 스타일 체크
+      id: ktlint
+      run: |
+        ./gradlew ktlintCheck > ktlint-output.txt 2>&1 || true
+        if grep -q "Task :ktlintCheck FAILED" ktlint-output.txt; then
+          echo "ktlint_failed=true" >> $GITHUB_OUTPUT
+          cat ktlint-output.txt
+          exit 1
+        fi
+    
+    - name: detekt 정적 분석
+      id: detekt
+      run: |
+        ./gradlew detekt > detekt-output.txt 2>&1 || true
+        if grep -q "Task :detekt FAILED" detekt-output.txt; then
+          echo "detekt_failed=true" >> $GITHUB_OUTPUT
+          cat detekt-output.txt
+          exit 1
+        fi
     
     - name: 컴파일 체크
       run: ./gradlew compileKotlin compileTestKotlin
     
-    - name: PR 코멘트 - 빌드 성공
+    - name: 테스트 실행
+      run: ./gradlew test
+      env:
+        SPRING_PROFILES_ACTIVE: test
+        OPENROUTER_API_KEY: test-api-key
+        JWT_SECRET: test-jwt-secret-key-for-pr
+    
+    - name: PR 코멘트 - 성공
       if: success()
       uses: actions/github-script@v6
       with:
         script: |
+          const message = `## ✅ PR 체크 결과: 성공!
+          
+          ### 검사 항목
+          - ✅ **ktlint** 스타일 체크 통과
+          - ✅ **detekt** 정적 분석 통과
+          - ✅ 컴파일 성공
+          - ✅ 테스트 통과
+          
+          모든 코드 품질 검사를 통과했습니다! 👍`;
+          
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '✅ 빌드 및 컴파일 체크 성공!'
+            body: message
+          })
+    
+    - name: PR 코멘트 - ktlint 실패
+      if: steps.ktlint.outputs.ktlint_failed == 'true'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const message = `## ❌ ktlint 스타일 체크 실패
+          
+          코드 스타일 문제가 발견되었습니다.
+          
+          ### 수정 방법
+          \`\`\`bash
+          ./gradlew ktlintFormat
+          \`\`\`
+          
+          위 명령어를 실행하여 자동으로 수정할 수 있습니다.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: message
+          })
+    
+    - name: PR 코멘트 - detekt 실패
+      if: steps.detekt.outputs.detekt_failed == 'true'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const message = `## ❌ detekt 정적 분석 실패
+          
+          코드 품질 문제가 발견되었습니다.
+          
+          ### 확인 방법
+          \`\`\`bash
+          ./gradlew detekt
+          \`\`\`
+          
+          위 명령어를 실행하여 상세 내용을 확인하세요.
+          리포트는 \`build/reports/detekt/detekt.html\`에서 확인할 수 있습니다.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: message
           })

@@ -1,5 +1,8 @@
 package com.aicounseling.app.domain.user
 
+import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.domain.user.repository.UserRepository
+import com.aicounseling.app.domain.user.service.UserService
 import com.aicounseling.app.global.security.AuthProvider
 import io.mockk.every
 import io.mockk.mockk

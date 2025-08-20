@@ -12,6 +12,8 @@ AI 철학자들이 사용자의 고민을 상담해주는 Kotlin Spring Boot 애
 - **API 429/503 에러는 외부 문제** - 코드 수정하지 말 것
 - **파일 생성 전 사용자 확인 필수** - 중복 폴더/파일 방지
 - **설계 → 구현 → 테스트** 순서 준수
+- **주석 작성 금지** - 코드는 스스로 설명적이어야 함
+- **인라인 주석 절대 금지** - 메서드명과 변수명으로 의도 표현
 
 ### Git 규칙
 - **커밋 메시지 한글만** - 영어 절대 금지
@@ -28,12 +30,15 @@ AI 철학자들이 사용자의 고민을 상담해주는 Kotlin Spring Boot 애
 # 개발 실행
 ./gradlew bootRun
 
+# Swagger UI 접속
+http://localhost:8080/swagger-ui.html
+
 # 테스트
 ./gradlew test                    # 전체 테스트
 ./gradlew test --rerun-tasks      # 캐시 무시
 ./gradlew test --tests "패키지.*" # 특정 테스트
 
-# 코드 품질 (필수 실행)
+# 코드 품질 (필수 실행 - 커밋 전)
 ./gradlew ktlintCheck    # 스타일 검사
 ./gradlew ktlintFormat   # 자동 수정
 ./gradlew detekt         # 정적 분석
@@ -44,6 +49,9 @@ AI 철학자들이 사용자의 고민을 상담해주는 Kotlin Spring Boot 애
 
 # 빌드
 ./gradlew clean build
+
+# 컴파일 (의존성 다운로드 포함)
+./gradlew compileKotlin
 ```
 
 ## 🏗️ 아키텍처 핵심
@@ -98,7 +106,8 @@ global/
 - **파라미터 6개 제한**
 
 ### 테스트 전략
-- **MockK 사용** - Mockito 대신
+- **MockK 사용** - Mockito 대신 (Kotlin 전용)
+- **Kotest BDD** - BehaviorSpec으로 시나리오 테스트
 - **@SpringBootTest** - 통합 테스트
 - **@WebMvcTest** - 컨트롤러 테스트
 - **H2 인메모리 DB** - 테스트용
@@ -109,10 +118,24 @@ global/
 - **인증**: Bearer token in header
 - **WebClient 빈 사용** - RestTemplate 금지
 
+## 📚 주요 라이브러리
+- **Spring Boot 3.5.4** - 코어 프레임워크
+- **Spring Data JPA** - ORM (+ JDSL for type-safe queries)
+- **Spring Security** - 인증/인가
+- **JWT (jjwt)** - 토큰 기반 인증
+- **WebFlux** - 비동기 HTTP 클라이언트
+- **SpringDoc OpenAPI** - Swagger UI 자동 생성
+- **Kotlin-logging** - 간결한 로깅
+- **Kotest** - BDD 스타일 테스트
+- **MockK** - Kotlin 모킹 라이브러리
+- **Ktlint + Detekt** - 코드 품질 도구
+
 ## 📋 현재 상태
 - ✅ User, Counselor, Auth 도메인 완성
 - ✅ JWT 인증, 코드 품질 도구 설정
-- 🚧 ChatSession API, Message 엔티티 진행 중
+- ✅ ChatSession 엔티티, Repository 완성
+- 🚧 ChatSession Service, DTO, Controller 진행 중
+- 🚧 Message 엔티티 구현 예정
 - ❌ OAuth 소셜 로그인, WebSocket 미구현
 
 ## 🔄 개발 워크플로우

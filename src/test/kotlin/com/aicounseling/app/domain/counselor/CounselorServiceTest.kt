@@ -1,7 +1,15 @@
 package com.aicounseling.app.domain.counselor
 
-import com.aicounseling.app.domain.session.ChatSessionRepository
-import com.aicounseling.app.domain.user.User
+import com.aicounseling.app.domain.counselor.entity.Counselor
+import com.aicounseling.app.domain.counselor.entity.CounselorRating
+import com.aicounseling.app.domain.counselor.entity.FavoriteCounselor
+import com.aicounseling.app.domain.counselor.repository.CounselorRatingRepository
+import com.aicounseling.app.domain.counselor.repository.CounselorRepository
+import com.aicounseling.app.domain.counselor.repository.FavoriteCounselorRepository
+import com.aicounseling.app.domain.counselor.service.CounselorService
+import com.aicounseling.app.domain.session.repository.ChatSessionRepository
+import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.domain.user.repository.UserRepository
 import com.aicounseling.app.global.security.AuthProvider
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -23,6 +31,7 @@ class CounselorServiceTest {
     private lateinit var favoriteCounselorRepository: FavoriteCounselorRepository
     private lateinit var sessionRepository: ChatSessionRepository
     private lateinit var ratingRepository: CounselorRatingRepository
+    private lateinit var userRepository: UserRepository
     private lateinit var objectMapper: ObjectMapper
 
     // 테스트 대상
@@ -39,6 +48,7 @@ class CounselorServiceTest {
         favoriteCounselorRepository = mockk()
         sessionRepository = mockk()
         ratingRepository = mockk()
+        userRepository = mockk()
         objectMapper = jacksonObjectMapper()
 
         // Service 생성
@@ -48,6 +58,7 @@ class CounselorServiceTest {
                 favoriteCounselorRepository,
                 sessionRepository,
                 ratingRepository,
+                userRepository,
                 objectMapper,
             )
 

@@ -4,7 +4,7 @@ plugins {
     id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.jpa") version "1.9.25"
-    kotlin("kapt") version "1.9.25" // QueryDSL용
+    kotlin("kapt") version "1.9.25"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0" // Kotlin 린터
     id("io.gitlab.arturbosch.detekt") version "1.23.6" // 코드 품질 분석
 }
@@ -51,12 +51,14 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
-    // QueryDSL (나중에 필요하면)
-    implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
-    implementation("com.querydsl:querydsl-apt:5.0.0:jakarta")
-    kapt("com.querydsl:querydsl-apt:5.0.0:jakarta")
-    kapt("jakarta.annotation:jakarta.annotation-api")
-    kapt("jakarta.persistence:jakarta.persistence-api")
+    // JDSL (Type-safe JPQL)
+    implementation("com.linecorp.kotlin-jdsl:spring-data-kotlin-jdsl-starter-jakarta:2.2.1.RELEASE")
+
+    // Logging
+    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+
+    // API Documentation (Swagger)
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
     // .env 파일 지원
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
@@ -77,6 +79,13 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
+
+    // Kotest
+    testImplementation("io.kotest:kotest-runner-junit5:5.7.2")
+    testImplementation("io.kotest:kotest-assertions-core:5.7.2")
+    testImplementation("io.kotest:kotest-property:5.7.2")
+    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

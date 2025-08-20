@@ -432,6 +432,39 @@ paths:
                   bookmarked:
                     type: boolean
 
+  /sessions/{id}/title:
+    patch:
+      tags: [sessions]
+      summary: 세션 제목 수정
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: 새 세션 제목
+      responses:
+        200:
+          description: 제목 수정됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetail'
+
   # ===== AI 도우미 =====
   /ai-helper/recommend:
     post:
@@ -548,6 +581,9 @@ components:
       properties:
         id:
           type: integer
+        title:
+          type: string
+          description: 세션 제목
         counselorId:
           type: integer
         counselorName:

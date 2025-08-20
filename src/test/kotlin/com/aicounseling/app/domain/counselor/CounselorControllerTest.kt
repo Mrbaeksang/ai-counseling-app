@@ -1,9 +1,15 @@
 package com.aicounseling.app.domain.counselor
 
-import com.aicounseling.app.domain.session.ChatSession
-import com.aicounseling.app.domain.session.ChatSessionRepository
-import com.aicounseling.app.domain.user.User
-import com.aicounseling.app.domain.user.UserRepository
+import com.aicounseling.app.domain.counselor.entity.Counselor
+import com.aicounseling.app.domain.counselor.entity.CounselorRating
+import com.aicounseling.app.domain.counselor.entity.FavoriteCounselor
+import com.aicounseling.app.domain.counselor.repository.CounselorRatingRepository
+import com.aicounseling.app.domain.counselor.repository.CounselorRepository
+import com.aicounseling.app.domain.counselor.repository.FavoriteCounselorRepository
+import com.aicounseling.app.domain.session.entity.ChatSession
+import com.aicounseling.app.domain.session.repository.ChatSessionRepository
+import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.domain.user.repository.UserRepository
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import org.junit.jupiter.api.BeforeEach

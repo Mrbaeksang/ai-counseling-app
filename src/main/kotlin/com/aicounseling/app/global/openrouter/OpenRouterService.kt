@@ -9,7 +9,6 @@ class OpenRouterService(
     private val properties: OpenRouterProperties,
 ) {
     companion object {
-        private const val API_KEY_PREVIEW_LENGTH = 10
         private const val DEFAULT_MAX_TOKENS = 2000
         private const val DEFAULT_TEMPERATURE = 0.7
     }
@@ -44,10 +43,39 @@ class OpenRouterService(
         userMessage: String,
         counselorPrompt: String,
         conversationHistory: List<Message> = emptyList(),
+        includeTitle: Boolean = false,
     ): String {
+        val responseFormat =
+            if (includeTitle) {
+                """
+            반드시 아래 JSON 형식으로만 응답해주세요:
+            {
+                "content": "사용자에게 전달할 상담 응답 내용",
+                "aiPhaseAssessment": "현재 단계를 판단한 이유와 상담 진행 상황 분석",
+                "sessionTitle": "이 대화를 요약한 15자 이내 제목"
+            }
+            """
+            } else {
+                """
+            반드시 아래 JSON 형식으로만 응답해주세요:
+            {
+                "content": "사용자에게 전달할 상담 응답 내용",
+                "aiPhaseAssessment": "현재 단계를 판단한 이유와 상담 진행 상황 분석"
+            }
+            """
+            }
+
+        val enhancedPrompt =
+            """
+            $counselorPrompt
+
+            응답 형식:
+            $responseFormat
+            """.trimIndent()
+
         val messages =
             buildList {
-                add(Message(role = "system", content = counselorPrompt))
+                add(Message(role = "system", content = enhancedPrompt))
                 addAll(conversationHistory)
                 add(Message(role = "user", content = userMessage))
             }
@@ -59,9 +87,6 @@ class OpenRouterService(
                 temperature = DEFAULT_TEMPERATURE,
                 max_tokens = DEFAULT_MAX_TOKENS,
             )
-
-        println("Sending request to OpenRouter: ${request.model}")
-        println("API Key: ${properties.apiKey.take(API_KEY_PREVIEW_LENGTH)}...")
 
         return webClient.post()
             .uri("/chat/completions")

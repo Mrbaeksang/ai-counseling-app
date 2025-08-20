@@ -19,10 +19,18 @@
       "mcp__jetbrains__get_file_text_by_path",
       "Bash(./gradlew detekt:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__github__list_commits",
+      "WebFetch(domain:devcom.kr)",
+      "mcp__jetbrains__create_new_file_with_text",
+      "mcp__jetbrains__execute_action_by_id",
+      "mcp__jetbrains__replace_specific_text",
+      "mcp__jetbrains__find_files_by_name_substring",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_file"
     ],
     "deny": [],
     "ask": []
   },
-  "outputStyle": "Learning"
+  "outputStyle": "Explanatory"
 }
