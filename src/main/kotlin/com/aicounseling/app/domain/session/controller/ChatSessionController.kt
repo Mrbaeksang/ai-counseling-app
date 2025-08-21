@@ -1,11 +1,14 @@
 package com.aicounseling.app.domain.session.controller
 
+import com.aicounseling.app.domain.session.dto.CreateSessionRequest
+import com.aicounseling.app.domain.session.dto.CreateSessionResponse
+import com.aicounseling.app.domain.session.dto.MessageItem
 import com.aicounseling.app.domain.session.dto.RateSessionRequest
 import com.aicounseling.app.domain.session.dto.SendMessageRequest
 import com.aicounseling.app.domain.session.dto.SendMessageResponse
+import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
 import com.aicounseling.app.domain.session.entity.ChatSession
-import com.aicounseling.app.domain.session.entity.Message
 import com.aicounseling.app.domain.session.service.ChatSessionService
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
@@ -53,18 +56,18 @@ class ChatSessionController(
         @RequestParam(required = false) bookmarked: Boolean?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<ChatSession>> {
+    ): RsData<List<SessionListResponse>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
-        val sessions = sessionService.getUserSessions(userId, bookmarked ?: false, pageable)
+        val sessions = sessionService.getUserSessions(userId, bookmarked, pageable)
 
         return RsData.of(
             "S-1",
             if (bookmarked == true) "북마크된 세션 조회 성공" else "세션 목록 조회 성공",
-            sessions.content,
+            sessions,
         )
     }
 
@@ -74,18 +77,18 @@ class ChatSessionController(
     @Operation(summary = "새 상담 세션 시작")
     @PostMapping
     fun startSession(
-        @RequestParam counselorId: Long,
-    ): RsData<ChatSession> {
+        @Valid @RequestBody request: CreateSessionRequest,
+    ): RsData<CreateSessionResponse> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val session = sessionService.startSession(userId, counselorId)
+        val response = sessionService.startSession(userId, request.counselorId)
 
         return RsData.of(
             "S-1",
             "세션 시작 성공",
-            session,
+            response,
         )
     }
 
@@ -96,17 +99,17 @@ class ChatSessionController(
     @DeleteMapping("/{sessionId}")
     fun closeSession(
         @PathVariable sessionId: Long,
-    ): RsData<ChatSession> {
+    ): RsData<Unit> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val session = sessionService.closeSession(sessionId, userId)
+        sessionService.closeSession(sessionId, userId)
 
         return RsData.of(
             "S-1",
             "세션 종료 성공",
-            session,
+            null,
         )
     }
 
@@ -119,7 +122,7 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<Message>> {
+    ): RsData<List<MessageItem>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
@@ -130,7 +133,7 @@ class ChatSessionController(
         return RsData.of(
             "S-1",
             "메시지 조회 성공",
-            messages.content,
+            messages,
         )
     }
 

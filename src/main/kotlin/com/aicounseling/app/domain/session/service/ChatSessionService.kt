@@ -2,6 +2,9 @@ package com.aicounseling.app.domain.session.service
 
 import com.aicounseling.app.domain.counselor.entity.CounselorRating
 import com.aicounseling.app.domain.counselor.service.CounselorService
+import com.aicounseling.app.domain.session.dto.CreateSessionResponse
+import com.aicounseling.app.domain.session.dto.MessageItem
+import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.entity.ChatSession
 import com.aicounseling.app.domain.session.entity.CounselingPhase
 import com.aicounseling.app.domain.session.entity.Message
@@ -14,7 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,20 +39,32 @@ class ChatSessionService(
     /**
      * 사용자의 상담 세션 목록 조회
      * @param userId 조회할 사용자 ID
-     * @param bookmarkedOnly true면 북마크된 세션만, false면 전체 세션
+     * @param bookmarked 북마크 필터 (null이면 전체, true면 북마크만)
      * @param pageable 페이징 정보
-     * @return 페이징된 세션 목록
+     * @return 세션 목록 응답 DTO
      */
     @Transactional(readOnly = true)
     fun getUserSessions(
         userId: Long,
-        bookmarkedOnly: Boolean = false,
+        bookmarked: Boolean?,
         pageable: Pageable,
-    ): Page<ChatSession> {
-        return if (bookmarkedOnly) {
-            sessionRepository.findByUserIdAndIsBookmarked(userId, true, pageable)
-        } else {
-            sessionRepository.findByUserId(userId, pageable)
+    ): List<SessionListResponse> {
+        val sessions =
+            if (bookmarked == true) {
+                sessionRepository.findByUserIdAndIsBookmarked(userId, true, pageable)
+            } else {
+                sessionRepository.findByUserId(userId, pageable)
+            }
+
+        return sessions.content.map { session ->
+            val counselor = counselorService.findById(session.counselorId)
+            SessionListResponse(
+                sessionId = session.id,
+                title = session.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
+                counselorName = counselor.name,
+                lastMessageAt = session.lastMessageAt ?: session.createdAt,
+                isBookmarked = session.isBookmarked,
+            )
         }
     }
 
@@ -58,33 +72,43 @@ class ChatSessionService(
      * 새로운 상담 세션 시작
      * @param userId 사용자 ID
      * @param counselorId 상담사 ID
-     * @return 생성된 세션
+     * @return 생성된 세션 응답 DTO
      */
     fun startSession(
         userId: Long,
         counselorId: Long,
-    ): ChatSession {
+    ): CreateSessionResponse {
+        // 상담사 존재 여부 확인
+        val counselor = counselorService.findById(counselorId)
+
+        // 세션 생성
         val session =
             ChatSession(
                 userId = userId,
                 counselorId = counselorId,
             )
 
-        return sessionRepository.save(session)
+        val savedSession = sessionRepository.save(session)
+
+        // DTO 변환 및 반환
+        return CreateSessionResponse(
+            sessionId = savedSession.id,
+            counselorName = counselor.name,
+            title = savedSession.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
+        )
     }
 
     /**
      * 상담 세션 종료
      * @param sessionId 종료할 세션 ID
      * @param userId 사용자 ID (권한 확인용)
-     * @return 종료된 세션
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      * @throws IllegalStateException 이미 종료된 세션인 경우
      */
     fun closeSession(
         sessionId: Long,
         userId: Long,
-    ): ChatSession {
+    ) {
         val session =
             sessionRepository.findByIdAndUserId(sessionId, userId)
                 ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
@@ -94,7 +118,7 @@ class ChatSessionService(
         }
 
         session.closedAt = LocalDateTime.now()
-        return sessionRepository.save(session)
+        sessionRepository.save(session)
     }
 
     /**
@@ -194,7 +218,7 @@ class ChatSessionService(
      * @param sessionId 조회할 세션 ID
      * @param userId 사용자 ID (권한 확인용)
      * @param pageable 페이징 정보
-     * @return 페이징된 메시지 목록
+     * @return 메시지 DTO 목록
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
     @Transactional(readOnly = true)
@@ -202,11 +226,18 @@ class ChatSessionService(
         sessionId: Long,
         userId: Long,
         pageable: Pageable,
-    ): Page<Message> {
+    ): List<MessageItem> {
         sessionRepository.findByIdAndUserId(sessionId, userId)
             ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
 
-        return messageRepository.findBySessionId(sessionId, pageable)
+        val messages = messageRepository.findBySessionId(sessionId, pageable)
+
+        return messages.content.map { message ->
+            MessageItem(
+                content = message.content,
+                senderType = message.senderType.name,
+            )
+        }
     }
 
     /**
