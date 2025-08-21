@@ -5,7 +5,7 @@ import org.springframework.web.reactive.function.client.WebClient
 
 @Service
 class OpenRouterService(
-    private val webClient: WebClient,
+    private val openRouterWebClient: WebClient,
     private val properties: OpenRouterProperties,
 ) {
     companion object {
@@ -30,7 +30,7 @@ class OpenRouterService(
                     },
             )
 
-        return webClient.post()
+        return openRouterWebClient.post()
             .uri("/chat/completions")
             .bodyValue(request)
             .retrieve()
@@ -88,7 +88,7 @@ class OpenRouterService(
                 max_tokens = DEFAULT_MAX_TOKENS,
             )
 
-        return webClient.post()
+        return openRouterWebClient.post()
             .uri("/chat/completions")
             .bodyValue(request)
             .retrieve()

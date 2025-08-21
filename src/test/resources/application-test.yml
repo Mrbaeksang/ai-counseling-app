@@ -20,12 +20,12 @@ spring:
       
 # 테스트용 외부 서비스 설정
 openrouter:
-  api-key: test-api-key  # 테스트용 더미 키
+  api-key: ${OPENROUTER_API_KEY}  # .env 파일에서 로드된 환경변수 사용
   model: openai/gpt-oss-20b
   site-url: http://localhost:8080
   site-name: Test App
   api:
-    enabled: false
+    enabled: true  # 통합 테스트를 위해 활성화
     
 redis:
   enabled: false
