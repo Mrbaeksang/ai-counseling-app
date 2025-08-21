@@ -29,3 +29,9 @@ openrouter:
     
 redis:
   enabled: false
+
+# JWT 설정 (테스트용 - 최소 256비트 = 32바이트 이상의 키 필요)
+jwt:
+  secret: test-secret-key-for-jwt-authentication-that-is-long-enough-to-meet-security-requirements-2024
+  expiration-time: 86400000  # 24시간
+  refresh-expiration-time: 604800000  # 7일

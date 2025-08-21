@@ -92,7 +92,7 @@ abstract class ChatSessionControllerBaseTest(
             )
 
         // JWT 토큰 생성
-        authToken = jwtTokenProvider.createToken(testUser.id!!, testUser.email)
+        authToken = jwtTokenProvider.createToken(testUser.id, testUser.email)
     }
 
     /**
