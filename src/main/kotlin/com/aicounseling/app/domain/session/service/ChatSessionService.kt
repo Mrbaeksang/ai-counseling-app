@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -40,32 +39,12 @@ class ChatSessionService(
     /**
      * 사용자의 상담 세션 목록 조회
      * @param userId 조회할 사용자 ID
-     * @param bookmarkedOnly true면 북마크된 세션만, false면 전체 세션
-     * @param pageable 페이징 정보
-     * @return 페이징된 세션 목록
-     */
-    @Transactional(readOnly = true)
-    fun getUserSessions(
-        userId: Long,
-        bookmarkedOnly: Boolean = false,
-        pageable: Pageable,
-    ): Page<ChatSession> {
-        return if (bookmarkedOnly) {
-            sessionRepository.findByUserIdAndIsBookmarked(userId, true, pageable)
-        } else {
-            sessionRepository.findByUserId(userId, pageable)
-        }
-    }
-
-    /**
-     * 사용자의 상담 세션 목록 조회 (DTO 응답)
-     * @param userId 조회할 사용자 ID
-     * @param bookmarked 북마크 필터 (null이면 전체)
+     * @param bookmarked 북마크 필터 (null이면 전체, true면 북마크만)
      * @param pageable 페이징 정보
      * @return 세션 목록 응답 DTO
      */
     @Transactional(readOnly = true)
-    fun getUserSessionsWithResponse(
+    fun getUserSessions(
         userId: Long,
         bookmarked: Boolean?,
         pageable: Pageable,
@@ -93,28 +72,9 @@ class ChatSessionService(
      * 새로운 상담 세션 시작
      * @param userId 사용자 ID
      * @param counselorId 상담사 ID
-     * @return 생성된 세션
-     */
-    fun startSession(
-        userId: Long,
-        counselorId: Long,
-    ): ChatSession {
-        val session =
-            ChatSession(
-                userId = userId,
-                counselorId = counselorId,
-            )
-
-        return sessionRepository.save(session)
-    }
-
-    /**
-     * 새로운 상담 세션 시작 (DTO 응답)
-     * @param userId 사용자 ID
-     * @param counselorId 상담사 ID
      * @return 생성된 세션 응답 DTO
      */
-    fun startSessionWithResponse(
+    fun startSession(
         userId: Long,
         counselorId: Long,
     ): CreateSessionResponse {
@@ -122,13 +82,19 @@ class ChatSessionService(
         val counselor = counselorService.findById(counselorId)
 
         // 세션 생성
-        val session = startSession(userId, counselorId)
+        val session =
+            ChatSession(
+                userId = userId,
+                counselorId = counselorId,
+            )
+
+        val savedSession = sessionRepository.save(session)
 
         // DTO 변환 및 반환
         return CreateSessionResponse(
-            sessionId = session.id,
+            sessionId = savedSession.id,
             counselorName = counselor.name,
-            title = session.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
+            title = savedSession.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
         )
     }
 

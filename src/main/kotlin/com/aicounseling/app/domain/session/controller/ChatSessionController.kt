@@ -62,7 +62,7 @@ class ChatSessionController(
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
-        val sessions = sessionService.getUserSessionsWithResponse(userId, bookmarked, pageable)
+        val sessions = sessionService.getUserSessions(userId, bookmarked, pageable)
 
         return RsData.of(
             "S-1",
@@ -83,7 +83,7 @@ class ChatSessionController(
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val response = sessionService.startSessionWithResponse(userId, request.counselorId)
+        val response = sessionService.startSession(userId, request.counselorId)
 
         return RsData.of(
             "S-1",
