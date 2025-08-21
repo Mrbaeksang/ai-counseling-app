@@ -4,11 +4,10 @@ import com.aicounseling.app.domain.counselor.dto.CounselorDetailResponse
 import com.aicounseling.app.domain.counselor.dto.CounselorListResponse
 import com.aicounseling.app.domain.counselor.service.CounselorService
 import com.aicounseling.app.domain.user.service.UserService
-import com.aicounseling.app.global.exception.UnauthorizedException
+import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -23,11 +22,8 @@ class CounselorController(
     private val counselorService: CounselorService,
     private val objectMapper: ObjectMapper,
     private val userService: UserService,
+    private val rq: Rq,
 ) {
-    /**
-     * GET /counselors?sort={sort} - 상담사 목록 조회
-     * @param sort: popular(인기순), rating(평점순), recent(최신순)
-     */
     @GetMapping
     fun getCounselors(
         @RequestParam(required = false) sort: String?,
@@ -46,16 +42,12 @@ class CounselorController(
                 )
             }
 
-        return RsData.Companion.of(
-            "200",
-            "상담사 목록 조회 성공",
-            response,
+        return rq.successResponse(
+            data = response,
+            message = "상담사 목록 조회 성공",
         )
     }
 
-    /**
-     * GET /counselors/{id} - 상담사 상세 조회
-     */
     @GetMapping("/{id}")
     fun getCounselor(
         @PathVariable id: Long,
@@ -74,16 +66,18 @@ class CounselorController(
                 averageRating = counselor.averageRating,
             )
 
-        return RsData.Companion.of("200", "상담사 조회 성공", response)
+        return rq.successResponse(
+            data = response,
+            message = "상담사 조회 성공",
+        )
     }
 
     @GetMapping("/favorites")
-    fun getFavoriteCounselors(
-        @AuthenticationPrincipal userId: Long?,
-    ): RsData<List<CounselorListResponse>> {
-        if (userId == null) {
-            throw UnauthorizedException("인증이 필요합니다")
-        }
+    fun getFavoriteCounselors(): RsData<List<CounselorListResponse>> {
+        val userId =
+            rq.currentUserId
+                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+
         val user = userService.getUser(userId)
         val counselors = counselorService.getFavoriteCounselors(user)
 
@@ -99,17 +93,20 @@ class CounselorController(
                 )
             }
 
-        return RsData.Companion.of("200", "즐겨찾기 목록 조회 성공", response)
+        return rq.successResponse(
+            data = response,
+            message = "즐겨찾기 목록 조회 성공",
+        )
     }
 
     @PostMapping("/{id}/favorite")
     fun addFavorite(
         @PathVariable id: Long,
-        @AuthenticationPrincipal userId: Long?,
     ): RsData<String> {
-        if (userId == null) {
-            throw UnauthorizedException("인증이 필요합니다")
-        }
+        val userId =
+            rq.currentUserId
+                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+
         val user = userService.getUser(userId)
         val counselor =
             counselorService.addFavorite(
@@ -117,17 +114,21 @@ class CounselorController(
                 counselorId = id,
             )
 
-        return RsData.Companion.of("201", "즐겨찾기 추가 성공", "상담사 ${counselor.name}을(를) 즐겨찾기에 추가했습니다.")
+        return RsData.of(
+            "201",
+            "즐겨찾기 추가 성공",
+            "상담사 ${counselor.name}을(를) 즐겨찾기에 추가했습니다.",
+        )
     }
 
     @DeleteMapping("/{id}/favorite")
     fun removeFavorite(
         @PathVariable id: Long,
-        @AuthenticationPrincipal userId: Long?,
     ): RsData<String> {
-        if (userId == null) {
-            throw UnauthorizedException("인증이 필요합니다")
-        }
+        val userId =
+            rq.currentUserId
+                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+
         val user = userService.getUser(userId)
         val counselor =
             counselorService.removeFavorite(
@@ -135,6 +136,10 @@ class CounselorController(
                 counselorId = id,
             )
 
-        return RsData.Companion.of("204", "즐겨찾기 제거 성공", "상담사 ${counselor.name}을(를) 즐겨찾기에서 제거했습니다.")
+        return RsData.of(
+            "204",
+            "즐겨찾기 제거 성공",
+            "상담사 ${counselor.name}을(를) 즐겨찾기에서 제거했습니다.",
+        )
     }
 }

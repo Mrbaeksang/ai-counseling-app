@@ -250,10 +250,17 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/SessionListItem'
-                  totalElements:
-                    type: integer
-                  totalPages:
-                    type: integer
+                  pageInfo:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      totalElements:
+                        type: integer
+                      totalPages:
+                        type: integer
 
     post:
       tags: [sessions]
@@ -279,9 +286,9 @@ paths:
                 $ref: '#/components/schemas/SessionDetail'
 
   /sessions/{id}:
-    get:
+    delete:
       tags: [sessions]
-      summary: 세션 상세 정보
+      summary: 세션 종료
       security:
         - bearerAuth: []
       parameters:
@@ -292,7 +299,7 @@ paths:
             type: integer
       responses:
         200:
-          description: 세션 정보
+          description: 세션 종료됨
           content:
             application/json:
               schema:
@@ -321,9 +328,23 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Message'
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  pageInfo:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      totalElements:
+                        type: integer
+                      totalPages:
+                        type: integer
 
     post:
       tags: [sessions]
@@ -359,27 +380,18 @@ paths:
                     $ref: '#/components/schemas/Message'
                   aiResponse:
                     $ref: '#/components/schemas/Message'
+                  currentPhase:
+                    type: string
+                    enum: [ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION, INTERVENTION_AND_SKILL_BUILDING, ACTION_AND_GENERALIZATION, TERMINATION_AND_RELAPSE_PREVENTION]
+                  sessionTitle:
+                    type: string
+                    description: 첫 메시지인 경우에만 포함
 
-  /sessions/{id}/close:
+
+  /sessions/{id}/rate:
     post:
       tags: [sessions]
-      summary: 세션 종료
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        200:
-          description: 세션 종료됨
-
-  /sessions/{id}/rating:
-    post:
-      tags: [sessions]
-      summary: 세션 평가
+      summary: 세션 평가 (종료 후에만 가능)
       security:
         - bearerAuth: []
       parameters:
@@ -397,17 +409,20 @@ paths:
               required: [rating]
               properties:
                 rating:
-                  type: number
-                  minimum: 0.5
-                  maximum: 5.0
-                  multipleOf: 0.5
-                  description: "별점 (0.5 단위, 예: 3.5, 4.0)"
-                review:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: "별점 (1-5)"
+                feedback:
                   type: string
-                  description: 텍스트 리뷰 (선택)
+                  description: 피드백 텍스트 (선택)
       responses:
         201:
           description: 평가 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CounselorRating'
 
   /sessions/{id}/bookmark:
     patch:
@@ -429,6 +444,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  sessionId:
+                    type: integer
                   bookmarked:
                     type: boolean
 
@@ -590,11 +607,10 @@ components:
           type: string
         phase:
           type: string
-          enum: [RAPPORT, EXPLORATION, ANALYSIS, INTERVENTION, PLANNING, CLOSING]
+          enum: [ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION, INTERVENTION_AND_SKILL_BUILDING, ACTION_AND_GENERALIZATION, TERMINATION_AND_RELAPSE_PREVENTION]
+          description: 마지막 메시지의 상담 단계
         isBookmarked:
           type: boolean
-        messageCount:
-          type: integer
         createdAt:
           type: string
           format: date-time
@@ -607,11 +623,10 @@ components:
         - $ref: '#/components/schemas/SessionListItem'
         - type: object
           properties:
-            phaseMetadata:
+            closedAt:
               type: string
-              description: AI가 판단한 현재 상태
-            closingSuggested:
-              type: boolean
+              format: date-time
+              description: 세션 종료 시간 (null이면 진행중)
 
     # ===== 메시지 =====
     Message:
@@ -626,9 +641,32 @@ components:
           enum: [USER, AI]
         content:
           type: string
-        aiPhaseAssessment:
+        phase:
           type: string
-          description: AI가 판단한 단계 정보
+          enum: [ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION, INTERVENTION_AND_SKILL_BUILDING, ACTION_AND_GENERALIZATION, TERMINATION_AND_RELAPSE_PREVENTION]
+          description: 이 메시지가 속한 상담 단계
+        createdAt:
+          type: string
+          format: date-time
+
+    # ===== 평가 =====
+    CounselorRating:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        counselorId:
+          type: integer
+        sessionId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        feedback:
+          type: string
         createdAt:
           type: string
           format: date-time

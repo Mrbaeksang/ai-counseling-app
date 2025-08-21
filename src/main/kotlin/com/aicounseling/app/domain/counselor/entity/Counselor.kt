@@ -1,13 +1,10 @@
 package com.aicounseling.app.domain.counselor.entity
 
+import com.aicounseling.app.global.entity.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.Transient
-import java.time.LocalDateTime
 
 /**
  * Counselor 엔티티 - AI 상담사 정보 (순수 데이터만)
@@ -25,10 +22,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "counselors")
-data class Counselor(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+class Counselor(
     @Column(nullable = false, length = 50)
     val name: String,
     @Column(nullable = false, length = 100)
@@ -43,11 +37,7 @@ data class Counselor(
     val specialties: String,
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
-) {
+) : BaseEntity() {
     @Transient
     var totalSessions: Int = 0
 

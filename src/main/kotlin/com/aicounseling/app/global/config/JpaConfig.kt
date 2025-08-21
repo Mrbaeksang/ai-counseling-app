@@ -1,12 +1,10 @@
 package com.aicounseling.app.global.config
 
 import org.springframework.context.annotation.Configuration
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 
 /**
- * JPA Auditing 설정
- * @CreatedDate, @LastModifiedDate 자동 설정
+ * JPA 관련 설정
+ * @EnableJpaAuditing은 AiCounselingApplication.kt에서 설정됨
  */
 @Configuration
-@EnableJpaAuditing
 class JpaConfig

@@ -1,13 +1,11 @@
 package com.aicounseling.app.domain.user.entity
 
+import com.aicounseling.app.global.entity.BaseEntity
 import com.aicounseling.app.global.security.AuthProvider
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
@@ -17,10 +15,7 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "users")
-data class User(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+class User(
     @Column(nullable = false)
     val email: String,
     @Column(nullable = false, length = 100)
@@ -34,10 +29,6 @@ data class User(
     var profileImageUrl: String? = null,
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "last_login_at")
     var lastLoginAt: LocalDateTime? = null,
-)
+) : BaseEntity()

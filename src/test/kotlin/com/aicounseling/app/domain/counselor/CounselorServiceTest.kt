@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("CounselorService 테스트")
@@ -65,7 +64,6 @@ class CounselorServiceTest {
         // 테스트 데이터 준비
         testCounselor =
             Counselor(
-                id = 1L,
                 name = "소크라테스",
                 title = "고대 그리스 철학자",
                 description = "질문을 통해 스스로 답을 찾도록 돕습니다",
@@ -73,18 +71,19 @@ class CounselorServiceTest {
                 basePrompt = "당신은 소크라테스입니다...",
                 specialties = """["자아탐구", "진리추구", "논리적사고"]""",
                 isActive = true,
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now(),
-            )
+            ).apply {
+                setIdForTest(1L)
+            }
 
         testUser =
             User(
-                id = 1L,
                 email = "test@test.com",
                 nickname = "테스터",
                 authProvider = AuthProvider.GOOGLE,
                 providerId = "google123",
-            )
+            ).apply {
+                setIdForTest(1L)
+            }
     }
 
     @Test
@@ -96,13 +95,14 @@ class CounselorServiceTest {
         every { ratingRepository.findByCounselorId(1L) } returns
             listOf(
                 CounselorRating(
-                    id = 1L,
                     user = testUser,
                     counselor = testCounselor,
                     session = mockk(),
                     rating = 4.5,
                     review = "좋았어요",
-                ),
+                ).apply {
+                    setIdForTest(1L)
+                },
             )
 
         // when
@@ -132,8 +132,8 @@ class CounselorServiceTest {
     @DisplayName("findAllWithSort - 인기순 정렬")
     fun findAllWithSort_popular() {
         // given
-        val counselor1 = testCounselor.copy(id = 1L)
-        val counselor2 = testCounselor.copy(id = 2L, name = "니체")
+        val counselor1 = createCounselorWithId(1L)
+        val counselor2 = createCounselorWithId(2L, name = "니체")
 
         every { counselorRepository.findByIsActiveTrue() } returns listOf(counselor1, counselor2)
         every { sessionRepository.countByCounselorId(1L) } returns 5
@@ -153,8 +153,8 @@ class CounselorServiceTest {
     @DisplayName("findAllWithSort - 평점순 정렬")
     fun findAllWithSort_rating() {
         // given
-        val counselor1 = testCounselor.copy(id = 1L)
-        val counselor2 = testCounselor.copy(id = 2L, name = "니체")
+        val counselor1 = createCounselorWithId(1L)
+        val counselor2 = createCounselorWithId(2L, name = "니체")
 
         every { counselorRepository.findByIsActiveTrue() } returns listOf(counselor1, counselor2)
         every { sessionRepository.countByCounselorId(any()) } returns 5
@@ -173,6 +173,31 @@ class CounselorServiceTest {
         // then
         assertThat(result[0].id).isEqualTo(2L) // 평점 높은 순
         assertThat(result[1].id).isEqualTo(1L)
+    }
+
+    private fun createCounselorWithId(
+        id: Long,
+        name: String = testCounselor.name,
+        title: String = testCounselor.title,
+        description: String = testCounselor.description,
+    ): Counselor {
+        return Counselor(
+            name = name,
+            title = title,
+            description = description,
+            personalityMatrix = testCounselor.personalityMatrix,
+            basePrompt = testCounselor.basePrompt,
+            specialties = testCounselor.specialties,
+            isActive = true,
+        ).apply {
+            setIdForTest(id)
+        }
+    }
+
+    private fun Any.setIdForTest(id: Long) {
+        val idField = this::class.java.superclass.getDeclaredField("id")
+        idField.isAccessible = true
+        idField.set(this, id)
     }
 
     @Test
@@ -194,10 +219,11 @@ class CounselorServiceTest {
         // given
         val favorite =
             FavoriteCounselor(
-                id = 1L,
                 user = testUser,
                 counselor = testCounselor,
-            )
+            ).apply {
+                setIdForTest(1L)
+            }
 
         every { favoriteCounselorRepository.findByUser(testUser) } returns listOf(favorite)
         every { sessionRepository.countByCounselorId(1L) } returns 5

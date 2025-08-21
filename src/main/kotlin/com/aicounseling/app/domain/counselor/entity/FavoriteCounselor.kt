@@ -1,17 +1,13 @@
 package com.aicounseling.app.domain.counselor.entity
 
 import com.aicounseling.app.domain.user.entity.User
-import jakarta.persistence.Column
+import com.aicounseling.app.global.entity.BaseEntity
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
-import java.time.LocalDateTime
 
 /**
  * FavoriteCounselor 엔티티 - 사용자의 상담사 즐겨찾기
@@ -29,10 +25,7 @@ import java.time.LocalDateTime
         UniqueConstraint(columnNames = ["user_id", "counselor_id"]),
     ],
 )
-data class FavoriteCounselor(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+class FavoriteCounselor(
     // LAZY 로딩: 실제로 user 객체가 필요할 때만 DB에서 조회
     // 즐겨찾기 목록만 볼 때 user 정보 불필요하면 성능 향상
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,6 +36,4 @@ data class FavoriteCounselor(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "counselor_id", nullable = false)
     val counselor: Counselor,
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-)
+) : BaseEntity()

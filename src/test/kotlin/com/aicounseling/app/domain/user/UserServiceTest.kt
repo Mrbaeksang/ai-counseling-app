@@ -32,12 +32,16 @@ class UserServiceTest {
 
         testUser =
             User(
-                id = 1L,
                 email = "test@test.com",
                 nickname = "테스트유저",
                 authProvider = AuthProvider.GOOGLE,
                 providerId = "google123",
-            )
+            ).apply {
+                // Reflection을 사용해 테스트용 ID 설정
+                val idField = this::class.java.superclass.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
     }
 
     @Test
@@ -73,7 +77,17 @@ class UserServiceTest {
     fun changeNickname_success() {
         // given
         val newNickname = "새닉네임"
-        val updatedUser = testUser.copy(nickname = newNickname)
+        val updatedUser =
+            User(
+                email = testUser.email,
+                nickname = newNickname,
+                authProvider = testUser.authProvider,
+                providerId = testUser.providerId,
+            ).apply {
+                val idField = this::class.java.superclass.getDeclaredField("id")
+                idField.isAccessible = true
+                idField.set(this, 1L)
+            }
 
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
@@ -166,7 +180,7 @@ class UserServiceTest {
     fun changeNickname_withSpecialCharacters() {
         // given
         val specialNickname = "테스트@123!"
-        val updatedUser = testUser.copy(nickname = specialNickname)
+        val updatedUser = createUserWithId(1L, nickname = specialNickname)
 
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
@@ -183,7 +197,7 @@ class UserServiceTest {
     fun changeNickname_withEmoji() {
         // given
         val emojiNickname = "테스트😀👍"
-        val updatedUser = testUser.copy(nickname = emojiNickname)
+        val updatedUser = createUserWithId(1L, nickname = emojiNickname)
 
         every { userRepository.findById(1L) } returns Optional.of(testUser)
         every { userRepository.save(any()) } returns updatedUser
@@ -193,6 +207,25 @@ class UserServiceTest {
 
         // then
         assertThat(result.nickname).isEqualTo(emojiNickname)
+    }
+
+    private fun createUserWithId(
+        id: Long,
+        email: String = testUser.email,
+        nickname: String = testUser.nickname,
+        authProvider: AuthProvider = testUser.authProvider,
+        providerId: String = testUser.providerId,
+    ): User {
+        return User(
+            email = email,
+            nickname = nickname,
+            authProvider = authProvider,
+            providerId = providerId,
+        ).apply {
+            val idField = this::class.java.superclass.getDeclaredField("id")
+            idField.isAccessible = true
+            idField.set(this, id)
+        }
     }
 
     @Test
