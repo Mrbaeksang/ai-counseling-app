@@ -35,7 +35,7 @@ logging:
     
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET:aicounseling-secret-key-for-development-only-change-in-production}
+  secret: ${JWT_SECRET:this-is-a-very-long-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2024}
   expiration: 86400000  # 24시간 (밀리초)
   refresh-expiration: 604800000  # 7일
 
