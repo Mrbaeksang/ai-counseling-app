@@ -1,10 +1,9 @@
 package com.aicounseling.app.global.rq
 
 import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rsData.RsData
-import com.aicounseling.app.global.security.JwtTokenProvider
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.context.annotation.RequestScope
@@ -13,8 +12,6 @@ import org.springframework.web.context.annotation.RequestScope
 @RequestScope
 class Rq(
     private val request: HttpServletRequest,
-    private val response: HttpServletResponse,
-    private val jwtTokenProvider: JwtTokenProvider,
 ) {
     val authentication
         get() = SecurityContextHolder.getContext().authentication
@@ -70,9 +67,9 @@ class Rq(
     fun isDelete(): Boolean = request.method == "DELETE"
 
     fun extractTokenFromHeader(): String? {
-        val bearerToken = getHeader("Authorization")
-        return if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            bearerToken.substring(7)
+        val bearerToken = getHeader(AppConstants.Auth.AUTHORIZATION_HEADER)
+        return if (bearerToken != null && bearerToken.startsWith(AppConstants.Auth.BEARER_PREFIX)) {
+            bearerToken.substring(AppConstants.Auth.BEARER_PREFIX_LENGTH)
         } else {
             null
         }

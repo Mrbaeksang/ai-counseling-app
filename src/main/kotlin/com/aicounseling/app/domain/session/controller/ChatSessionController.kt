@@ -1,6 +1,5 @@
 package com.aicounseling.app.domain.session.controller
 
-import com.aicounseling.app.domain.counselor.service.CounselorService
 import com.aicounseling.app.domain.session.dto.RateSessionRequest
 import com.aicounseling.app.domain.session.dto.SendMessageRequest
 import com.aicounseling.app.domain.session.dto.SendMessageResponse
@@ -43,7 +42,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/sessions")
 class ChatSessionController(
     private val sessionService: ChatSessionService,
-    private val counselorService: CounselorService,
     private val rq: Rq,
 ) {
     /**

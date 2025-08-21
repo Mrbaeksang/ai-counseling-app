@@ -13,6 +13,7 @@ import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -29,6 +30,10 @@ class ChatSessionService(
     private val openRouterService: OpenRouterService,
     private val objectMapper: ObjectMapper,
 ) {
+    companion object {
+        private val logger = LoggerFactory.getLogger(ChatSessionService::class.java)
+    }
+
     /**
      * 사용자의 상담 세션 목록 조회
      * @param userId 조회할 사용자 ID
@@ -301,9 +306,10 @@ class ChatSessionService(
                     )
                 }
             } catch (e: IOException) {
-                // 에러 발생 시 처리
-                handleAiResponseError(session, savedUserMessage, content, userPhase, isFirstMessage, e)
-                return Pair(savedUserMessage, createErrorMessage(session, userPhase, e))
+                // 에러 발생 시 로깅 및 처리
+                logger.error("AI 응답 요청 실패 - sessionId: {}, error: {}", sessionId, e.message, e)
+                handleAiResponseError(session, content, isFirstMessage)
+                return Pair(savedUserMessage, createErrorMessage(session, userPhase))
             }
 
         // 8. AI 응답 파싱
@@ -354,7 +360,13 @@ class ChatSessionService(
                 try {
                     CounselingPhase.valueOf(currentPhaseString)
                 } catch (e: IllegalArgumentException) {
-                    CounselingPhase.ENGAGEMENT // 잘못된 단계명이면 기본값
+                    // 예외 처리: 잘못된 단계명은 기본값으로 처리
+                    logger.warn(
+                        "잘못된 상담 단계명 수신: {}, 기본값(ENGAGEMENT) 사용 - error: {}",
+                        currentPhaseString,
+                        e.message,
+                    )
+                    CounselingPhase.ENGAGEMENT
                 }
 
             val title =
@@ -367,6 +379,7 @@ class ChatSessionService(
             Triple(content, currentPhase, title)
         } catch (e: JsonProcessingException) {
             // JSON 파싱 실패시 기본값들로 처리
+            logger.error("AI 응답 JSON 파싱 실패: {}", e.message, e)
             Triple(rawResponse, CounselingPhase.ENGAGEMENT, null)
         }
     }
@@ -374,19 +387,13 @@ class ChatSessionService(
     /**
      * AI 응답 에러 발생 시 세션 상태 정리
      * @param session 현재 세션
-     * @param userMessage 사용자 메시지
      * @param content 메시지 내용
-     * @param userPhase 사용자 메시지 단계
      * @param isFirstMessage 첫 메시지 여부
-     * @param error 발생한 에러
      */
     private fun handleAiResponseError(
         session: ChatSession,
-        userMessage: Message,
         content: String,
-        userPhase: CounselingPhase,
         isFirstMessage: Boolean,
-        error: IOException,
     ) {
         if (isFirstMessage) {
             session.title =
@@ -402,13 +409,11 @@ class ChatSessionService(
      * AI 응답 실패 시 에러 메시지 생성
      * @param session 현재 세션
      * @param phase 현재 상담 단계
-     * @param error 발생한 에러
      * @return 생성된 에러 메시지
      */
     private fun createErrorMessage(
         session: ChatSession,
         phase: CounselingPhase,
-        error: IOException,
     ): Message {
         val errorMessage =
             Message(

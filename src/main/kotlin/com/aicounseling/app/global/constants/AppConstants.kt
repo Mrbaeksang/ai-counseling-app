@@ -5,6 +5,7 @@ object AppConstants {
         const val JWT_EXPIRATION_MS = 86400000L // 24 hours
         const val REFRESH_TOKEN_EXPIRATION_MS = 604800000L // 7 days
         const val BEARER_PREFIX = "Bearer "
+        const val BEARER_PREFIX_LENGTH = 7 // "Bearer " 길이
         const val AUTHORIZATION_HEADER = "Authorization"
         const val REFRESH_TOKEN_HEADER = "X-Refresh-Token"
     }

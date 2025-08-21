@@ -13,6 +13,26 @@ import org.springframework.web.context.request.ServletRequestAttributes
 @Aspect
 @Component
 class ResponseAspect {
+    companion object {
+        private const val DEFAULT_STATUS_CODE = 200
+
+        private val STATUS_CODE_MAP =
+            mapOf(
+                "200" to HttpStatus.OK,
+                "201" to HttpStatus.CREATED,
+                "204" to HttpStatus.NO_CONTENT,
+                "400" to HttpStatus.BAD_REQUEST,
+                "401" to HttpStatus.UNAUTHORIZED,
+                "403" to HttpStatus.FORBIDDEN,
+                "404" to HttpStatus.NOT_FOUND,
+                "409" to HttpStatus.CONFLICT,
+                "422" to HttpStatus.UNPROCESSABLE_ENTITY,
+                "500" to HttpStatus.INTERNAL_SERVER_ERROR,
+                "502" to HttpStatus.BAD_GATEWAY,
+                "503" to HttpStatus.SERVICE_UNAVAILABLE,
+            )
+    }
+
     @Around("@within(org.springframework.web.bind.annotation.RestController)")
     fun handleResponse(joinPoint: ProceedingJoinPoint): Any? {
         val result = joinPoint.proceed()
@@ -29,23 +49,9 @@ class ResponseAspect {
     }
 
     private fun getHttpStatusFromCode(code: String): HttpStatus {
-        return when (code) {
-            "200" -> HttpStatus.OK
-            "201" -> HttpStatus.CREATED
-            "204" -> HttpStatus.NO_CONTENT
-            "400" -> HttpStatus.BAD_REQUEST
-            "401" -> HttpStatus.UNAUTHORIZED
-            "403" -> HttpStatus.FORBIDDEN
-            "404" -> HttpStatus.NOT_FOUND
-            "409" -> HttpStatus.CONFLICT
-            "422" -> HttpStatus.UNPROCESSABLE_ENTITY
-            "500" -> HttpStatus.INTERNAL_SERVER_ERROR
-            "502" -> HttpStatus.BAD_GATEWAY
-            "503" -> HttpStatus.SERVICE_UNAVAILABLE
-            else -> {
-                val numericCode = code.toIntOrNull() ?: 200
-                HttpStatus.valueOf(numericCode)
-            }
+        return STATUS_CODE_MAP[code] ?: run {
+            val numericCode = code.toIntOrNull() ?: DEFAULT_STATUS_CODE
+            HttpStatus.valueOf(numericCode)
         }
     }
 
