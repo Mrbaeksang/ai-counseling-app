@@ -184,6 +184,19 @@ Spring profiles:
 - Prefer immutable data structures
 - Follow existing patterns in codebase for consistency
 
+## Git Commit Rules
+
+- **MUST use Korean commit messages** (한국어로 커밋 메시지 작성 필수)
+- **NEVER include AI-generated markers** (절대 "Generated with Claude" 등의 AI 표시 금지)
+- Commit format: `type: 한국어 설명`
+  - feat: 새로운 기능
+  - fix: 버그 수정
+  - refactor: 리팩토링
+  - test: 테스트 추가/수정
+  - docs: 문서 수정
+  - style: 코드 스타일 수정
+- Example: `fix: 로그인 인증 버그 수정`
+
 ## Security Considerations
 
 - JWT tokens in Authorization header (Bearer scheme)
