@@ -132,6 +132,7 @@ class ChatSessionService(
      * @return 토글 후 북마크 상태 (true: 북마크됨, false: 북마크 해제됨)
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
+    @Transactional
     fun toggleBookmark(
         sessionId: Long,
         userId: Long,
