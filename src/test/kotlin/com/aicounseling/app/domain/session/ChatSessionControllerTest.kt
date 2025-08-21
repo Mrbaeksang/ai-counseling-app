@@ -2,7 +2,9 @@ package com.aicounseling.app.domain.session
 
 import com.aicounseling.app.domain.counselor.entity.Counselor
 import com.aicounseling.app.domain.counselor.repository.CounselorRepository
-import com.aicounseling.app.domain.session.dto.*
+import com.aicounseling.app.domain.session.dto.RateSessionRequest
+import com.aicounseling.app.domain.session.dto.SendMessageRequest
+import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
 import com.aicounseling.app.domain.session.entity.ChatSession
 import com.aicounseling.app.domain.session.entity.CounselingPhase
 import com.aicounseling.app.domain.session.entity.Message
@@ -28,8 +30,13 @@ import org.springframework.context.annotation.Primary
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
 import java.io.IOException
 import java.time.LocalDateTime
@@ -347,7 +354,8 @@ class ChatSessionControllerTest(
                             ChatSession(
                                 userId = testUser.id!!,
                                 counselorId = testCounselor.id!!,
-                                title = null, // 첫 메시지로 제목 생성 테스트
+                                // 첫 메시지로 제목 생성 테스트
+                                title = null,
                             ),
                         )
 
@@ -846,7 +854,8 @@ class ChatSessionControllerTest(
                                 userId = testUser.id!!,
                                 counselorId = testCounselor.id!!,
                                 title = "세션 #${index + 1}",
-                                isBookmarked = index % 3 == 0, // 33개만 북마크
+                                // 33개만 북마크
+                                isBookmarked = index % 3 == 0,
                             ),
                         )
                     }

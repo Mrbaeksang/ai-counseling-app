@@ -1,24 +1,22 @@
 package com.aicounseling.app.domain.session.controller
 
 import com.aicounseling.app.domain.counselor.service.CounselorService
-import com.aicounseling.app.domain.session.dto.BookmarkResponse
 import com.aicounseling.app.domain.session.dto.MessageResponse
 import com.aicounseling.app.domain.session.dto.RateSessionRequest
-import com.aicounseling.app.domain.session.dto.RatingResponse
 import com.aicounseling.app.domain.session.dto.SendMessageRequest
 import com.aicounseling.app.domain.session.dto.SendMessageResponse
 import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.SessionResponse
-import com.aicounseling.app.domain.session.dto.StartSessionRequest
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
+import com.aicounseling.app.domain.session.entity.ChatSession
+import com.aicounseling.app.domain.session.entity.Message
 import com.aicounseling.app.domain.session.service.ChatSessionService
-import com.aicounseling.app.global.pagination.PageUtils
-import com.aicounseling.app.global.pagination.PagedResponse
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -53,8 +51,6 @@ class ChatSessionController(
 ) {
     /**
      * 1. GET /sessions - 내 상담 세션 목록 조회
-     * - 페이징 지원 (page, size)
-     * - 북마크 필터링 (bookmarked)
      */
     @Operation(summary = "내 상담 세션 목록 조회")
     @GetMapping
@@ -62,83 +58,62 @@ class ChatSessionController(
         @RequestParam(required = false) bookmarked: Boolean?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<PagedResponse<SessionListResponse>> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<List<ChatSession>> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val safePagable =
-            PageUtils.createPageRequest(
-                page = page,
-                size = size,
-                sortBy = "lastMessageAt",
-                direction = Sort.Direction.DESC,
-            )
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
+        val sessions = sessionService.getUserSessions(userId, bookmarked ?: false, pageable)
 
-        val sessions = sessionService.getUserSessions(userId, bookmarked ?: false, safePagable)
-
-        val responses =
-            sessions.map { session ->
-                val counselor = counselorService.findById(session.counselorId)
-                SessionListResponse.from(session, counselor)
-            }
-
-        return rq.successResponse(
-            data = PagedResponse.from(responses),
-            message = if (bookmarked == true) "북마크된 세션 조회 성공" else "세션 목록 조회 성공",
+        return RsData.of(
+            "S-1",
+            if (bookmarked == true) "북마크된 세션 조회 성공" else "세션 목록 조회 성공",
+            sessions.content,
         )
     }
 
     /**
      * 2. POST /sessions - 새 상담 세션 시작
-     * - 상담사 ID 필수
-     * - 여러 개의 활성 세션 허용 (ChatGPT처럼)
      */
     @Operation(summary = "새 상담 세션 시작")
     @PostMapping
     fun startSession(
-        @Valid @RequestBody request: StartSessionRequest,
-    ): RsData<SessionResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+        @RequestParam counselorId: Long,
+    ): RsData<ChatSession> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val session = sessionService.startSession(userId, request.counselorId)
-        val counselor = counselorService.findById(session.counselorId)
+        val session = sessionService.startSession(userId, counselorId)
 
         return RsData.of(
-            "201",
+            "S-1",
             "세션 시작 성공",
-            SessionResponse.from(session, counselor),
+            session,
         )
     }
 
     /**
      * 3. DELETE /sessions/{id} - 세션 종료
-     * - closedAt 타임스탬프 설정
      */
     @Operation(summary = "세션 종료")
     @DeleteMapping("/{sessionId}")
     fun closeSession(
         @PathVariable sessionId: Long,
-    ): RsData<SessionResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<ChatSession> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
         val session = sessionService.closeSession(sessionId, userId)
-        val counselor = counselorService.findById(session.counselorId)
 
-        return rq.successResponse(
-            data = SessionResponse.from(session, counselor),
-            message = "세션 종료 성공",
+        return RsData.of(
+            "S-1",
+            "세션 종료 성공",
+            session,
         )
     }
 
     /**
      * 4. GET /sessions/{id}/messages - 세션 메시지 목록 조회
-     * - 페이징 지원
-     * - 시간순 정렬 (오래된 것부터)
      */
     @Operation(summary = "세션 메시지 목록 조회")
     @GetMapping("/{sessionId}/messages")
@@ -146,34 +121,22 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<PagedResponse<MessageResponse>> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<List<Message>> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val safePagable =
-            PageUtils.createPageRequest(
-                page = page,
-                size = size,
-                sortBy = "createdAt",
-                direction = Sort.Direction.ASC,
-            )
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"))
+        val messages = sessionService.getSessionMessages(sessionId, userId, pageable)
 
-        val messages = sessionService.getSessionMessages(sessionId, userId, safePagable)
-        val responses = PagedResponse.from(messages) { MessageResponse.from(it) }
-
-        return rq.successResponse(
-            data = responses,
-            message = "메시지 조회 성공",
+        return RsData.of(
+            "S-1",
+            "메시지 조회 성공",
+            messages.content,
         )
     }
 
     /**
      * 5. POST /sessions/{id}/messages - 메시지 전송 (AI 응답 포함)
-     * - 사용자 메시지 저장
-     * - OpenRouter API 호출
-     * - AI 응답 저장
-     * - 상담 단계(phase) 자동 갱신
      */
     @Operation(summary = "메시지 전송 (AI 응답 포함)")
     @PostMapping("/{sessionId}/messages")
@@ -181,103 +144,99 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: SendMessageRequest,
     ): RsData<SendMessageResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val response =
-            sessionService.sendMessage(
-                sessionId = sessionId,
-                userId = userId,
-                content = request.content,
-            )
+        val (userMessage, aiMessage) = sessionService.sendMessage(
+            sessionId = sessionId,
+            userId = userId,
+            content = request.content,
+        )
+
+        // 세션 정보 조회 (제목 업데이트 확인용)
+        val session = sessionService.getSession(sessionId, userId)
 
         return RsData.of(
-            "201",
+            "S-1",
             "메시지 전송 성공",
-            response,
+            SendMessageResponse.from(userMessage, aiMessage, session),
         )
     }
 
     /**
      * 6. POST /sessions/{id}/rate - 세션 평가
-     * - 1-5점 평점
-     * - 선택적 피드백 텍스트
-     * - 세션당 1회만 평가 가능
      */
     @Operation(summary = "세션 평가")
     @PostMapping("/{sessionId}/rate")
     fun rateSession(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: RateSessionRequest,
-    ): RsData<RatingResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<Any> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val rating =
-            sessionService.rateSession(
-                sessionId = sessionId,
-                userId = userId,
-                rating = request.rating,
-                feedback = request.feedback,
-            )
+        val rating = sessionService.rateSession(
+            sessionId = sessionId,
+            userId = userId,
+            rating = request.rating,
+            feedback = request.feedback,
+        )
 
         return RsData.of(
-            "201",
+            "S-1",
             "평가 완료",
-            RatingResponse(
-                id = rating.id,
-                sessionId = sessionId,
-                counselorId = rating.counselor.id,
-                rating = rating.rating.toInt(),
-                review = rating.review,
-                createdAt = rating.createdAt,
+            mapOf(
+                "id" to rating.id,
+                "sessionId" to sessionId,
+                "counselorId" to rating.counselor.id,
+                "rating" to rating.rating,
+                "feedback" to rating.review,
+                "createdAt" to rating.createdAt,
             ),
         )
     }
 
     /**
      * 7. PATCH /sessions/{id}/bookmark - 세션 북마크 토글
-     * - 북마크 상태 반전 (true ↔ false)
      */
     @Operation(summary = "세션 북마크 토글")
     @PatchMapping("/{sessionId}/bookmark")
     fun toggleBookmark(
         @PathVariable sessionId: Long,
-    ): RsData<BookmarkResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<Map<String, Any>> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val session = sessionService.toggleBookmark(sessionId, userId)
+        val isBookmarked = sessionService.toggleBookmark(sessionId, userId)
 
-        return rq.successResponse(
-            data = BookmarkResponse(sessionId, session.isBookmarked),
-            message = if (session.isBookmarked) "북마크 추가 성공" else "북마크 제거 성공",
+        return RsData.of(
+            "S-1",
+            if (isBookmarked) "북마크 추가 성공" else "북마크 제거 성공",
+            mapOf(
+                "sessionId" to sessionId,
+                "isBookmarked" to isBookmarked,
+            ),
         )
     }
 
     /**
      * 8. PATCH /sessions/{id}/title - 세션 제목 수정
-     * - 1-100자 제한
      */
     @Operation(summary = "세션 제목 수정")
     @PatchMapping("/{sessionId}/title")
     fun updateSessionTitle(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: UpdateSessionTitleRequest,
-    ): RsData<SessionResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+    ): RsData<ChatSession> {
+        val userId = rq.currentUserId
+            ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
         val session = sessionService.updateSessionTitle(sessionId, userId, request.title)
-        val counselor = counselorService.findById(session.counselorId)
 
-        return rq.successResponse(
-            data = SessionResponse.from(session, counselor),
-            message = "세션 제목 변경 성공",
+        return RsData.of(
+            "S-1",
+            "세션 제목 변경 성공",
+            session,
         )
     }
 }
