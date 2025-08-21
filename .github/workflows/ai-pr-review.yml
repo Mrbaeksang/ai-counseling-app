@@ -117,7 +117,7 @@ jobs:
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                  model: 'deepseek/deepseek-v3.1-base',  // DeepSeek V3.1 모델 (안정적인 코드 리뷰)
+                  model: 'deepseek/deepseek-r1-0528:free',  // DeepSeek R1 무료 모델 (최신 추론 능력)
                   messages: [{
                     role: 'system',
                     content: `당신은 Kotlin Spring Boot 전문가입니다.

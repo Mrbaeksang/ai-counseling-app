@@ -42,18 +42,8 @@ class OpenRouterIntegrationTest {
     private lateinit var openRouterService: OpenRouterService
 
     @Test
+    @Disabled("실제 API 호출 테스트 - 로컬에서만 수동 실행")
     fun `OpenRouter API 연결 테스트`() {
-        // CI 환경에서는 실제 API 키가 없으면 테스트 스킵
-        val isCI = System.getenv("CI") == "true"
-        val hasRealApiKey =
-            System.getenv("OPENROUTER_API_KEY") != null ||
-                dotenv["OPENROUTER_API_KEY"] != null
-
-        if (isCI && !hasRealApiKey) {
-            println("CI 환경에서 API 키가 없어 테스트 스킵")
-            return
-        }
-
         runBlocking {
             val response =
                 openRouterService.sendMessage(
