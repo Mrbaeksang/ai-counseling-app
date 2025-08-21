@@ -27,7 +27,11 @@
       "mcp__jetbrains__replace_specific_text",
       "mcp__jetbrains__find_files_by_name_substring",
       "mcp__filesystem__list_directory",
-      "mcp__filesystem__read_file"
+      "mcp__filesystem__read_file",
+      "mcp__github__list_pull_requests",
+      "mcp__github__get_pull_request_status",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []

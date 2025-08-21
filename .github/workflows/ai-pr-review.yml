@@ -117,7 +117,7 @@ jobs:
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                  model: 'qwen/qwen3-coder:free',  // Qwen3 Coder 단일 모델 사용
+                  model: 'deepseek/deepseek-v3.1-base',  // DeepSeek V3.1 모델 (안정적인 코드 리뷰)
                   messages: [{
                     role: 'system',
                     content: `당신은 Kotlin Spring Boot 전문가입니다.
