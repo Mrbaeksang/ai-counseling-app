@@ -1,395 +1,233 @@
-package com.aicounseling.app.domain.session
+# AI 상담 서비스 - 프로젝트 지침서
 
-import com.aicounseling.app.domain.counselor.entity.Counselor
-import com.aicounseling.app.domain.counselor.repository.CounselorRepository
-import com.aicounseling.app.domain.counselor.service.CounselorService
-import com.aicounseling.app.domain.session.entity.ChatSession
-import com.aicounseling.app.domain.session.entity.CounselingPhase
-import com.aicounseling.app.domain.session.entity.Message
-import com.aicounseling.app.domain.session.entity.SenderType
-import com.aicounseling.app.domain.session.repository.ChatSessionRepository
-import com.aicounseling.app.domain.session.repository.MessageRepository
-import com.aicounseling.app.domain.session.service.ChatSessionService
-import com.aicounseling.app.domain.user.entity.User
-import com.aicounseling.app.domain.user.repository.UserRepository
-import com.aicounseling.app.global.security.AuthProvider
-import com.aicounseling.app.global.security.JwtTokenProvider
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.kotest.core.spec.style.BehaviorSpec
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureTestDatabase
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.test.context.TestConstructor
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.context.WebApplicationContext
-import java.time.LocalDateTime
+## 프로젝트 개요
+AI 기반 심리 상담 서비스 백엔드 API (Spring Boot 3.5.4 + Kotlin 1.9.25)
 
+## 기술 스택
+- **Framework**: Spring Boot 3.5.4
+- **Language**: Kotlin 1.9.25
+- **Database**: PostgreSQL / H2 (개발용)
+- **AI Model**: OpenRouter API (다양한 LLM 모델 활용)
+- **Testing**: Kotest, MockK, Spring Boot Test
+- **Code Quality**: Ktlint, Detekt
+- **CI/CD**: GitHub Actions (AI PR 리뷰 자동화)
+
+## 프로젝트 구조
+```
+src/main/kotlin/com/aicounseling/app/
+├── domain/                    # 도메인별 패키지 (Feature-based)
+│   ├── auth/                 # 인증/인가
+│   │   ├── controller/
+│   │   ├── service/
+│   │   └── dto/
+│   ├── counselor/            # 상담사 관리
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   ├── service/
+│   │   ├── controller/
+│   │   └── dto/
+│   ├── session/              # 상담 세션
+│   │   ├── entity/
+│   │   ├── repository/
+│   │   ├── service/
+│   │   ├── controller/
+│   │   └── dto/
+│   └── user/                 # 사용자 관리
+│       ├── entity/
+│       ├── repository/
+│       ├── service/
+│       ├── controller/
+│       └── dto/
+└── global/                    # 공통 컴포넌트
+    ├── aspect/               # AOP (ResponseAspect)
+    ├── config/               # 설정 (JPA, Security, OpenAPI)
+    ├── constants/            # 상수 (AppConstants)
+    ├── entity/               # BaseEntity
+    ├── exception/            # 전역 예외 처리
+    ├── openrouter/           # OpenRouter API 클라이언트
+    ├── pagination/           # 페이징 유틸리티
+    ├── rq/                   # Request 컨텍스트
+    ├── rsData/               # 표준 응답 포맷
+    └── security/             # JWT, 인증
+```
+
+## 핵심 비즈니스 로직
+
+### 1. 상담 프로세스 (5단계 심리학 모델)
+```kotlin
+enum class CounselingPhase(val koreanName: String) {
+    ENGAGEMENT("관계 형성"),                    // 라포 형성, 신뢰 구축
+    ASSESSMENT_AND_CONCEPTUALIZATION("평가 및 개념화"), // 문제 탐색
+    INTERVENTION_AND_SKILL_BUILDING("개입 및 기술 구축"), // 해결책 제시
+    ACTION_AND_GENERALIZATION("실행 및 일반화"),      // 실천 계획
+    TERMINATION_AND_RELAPSE_PREVENTION("종결 및 재발 방지") // 마무리
+}
+```
+
+### 2. 주요 특징
+- **다중 세션 지원**: 사용자당 여러 개의 활성 세션 허용 (ChatGPT처럼)
+- **상담 단계 추적**: 각 메시지별로 AI가 상담 단계 판단
+- **상담사 페르소나**: 각 상담사별 고유한 성격과 프롬프트
+- **평가 시스템**: 세션별 평가 및 피드백
+
+## API 엔드포인트 (8개 핵심)
+
+### 세션 관리 (/api/sessions)
+1. `GET /sessions` - 세션 목록 조회 (페이징, 북마크 필터)
+2. `POST /sessions` - 새 세션 시작
+3. `DELETE /sessions/{id}` - 세션 종료
+4. `GET /sessions/{id}/messages` - 메시지 목록 조회
+5. `POST /sessions/{id}/messages` - 메시지 전송 (AI 응답 포함)
+6. `POST /sessions/{id}/rate` - 세션 평가
+7. `PATCH /sessions/{id}/bookmark` - 북마크 토글
+8. `PATCH /sessions/{id}/title` - 제목 수정
+
+## 테스트 전략
+
+### Kotest BehaviorSpec 예제
+```kotlin
 @SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@TestConstructor(useDefaultConstructor = true)
-@Transactional
-class ChatSessionControllerTest(
-    private val context: WebApplicationContext,
-    private val objectMapper: ObjectMapper,
-    private val jwtTokenProvider: JwtTokenProvider,
-    private val userRepository: UserRepository,
-    private val counselorRepository: CounselorRepository,
-    private val sessionRepository: ChatSessionRepository,
-    private val messageRepository: MessageRepository,
-    private val sessionService: ChatSessionService,
-    private val counselorService: CounselorService,
-) : BehaviorSpec({
-    
-    val mockMvc = MockMvcBuilders.webAppContextSetup(context).build()
-    
-    lateinit var testUser: User
-    lateinit var testCounselor: Counselor
-    lateinit var testSession: ChatSession
-    lateinit var authToken: String
-
-    beforeEach {
-        // 테스트 사용자 생성
-        testUser = userRepository.save(
-            User(
-                email = "test@example.com",
-                nickname = "테스트유저",
-                authProvider = AuthProvider.GOOGLE,
-                providerId = "google-test-id"
-            )
-        )
-
-        // 테스트 상담사 생성
-        testCounselor = counselorRepository.save(
-            Counselor(
-                name = "아리스토텔레스",
-                title = "고대 그리스의 철학자",
-                description = "실용적 윤리학과 행복론의 대가",
-                personalityMatrix = """{"wisdom": 9, "empathy": 8, "logic": 10}""",
-                basePrompt = "당신은 아리스토텔레스입니다."
-            )
-        )
-
-        // JWT 토큰 생성
-        authToken = jwtTokenProvider.createToken(testUser.id, testUser.email)
-
-        // 테스트 세션 생성
-        testSession = sessionRepository.save(
-            ChatSession(
-                userId = testUser.id,
-                counselorId = testCounselor.id,
-                title = "테스트 상담 세션",
-                isBookmarked = false,
-                lastMessageAt = LocalDateTime.now()
-            )
-        )
-    }
-
+class ChatSessionControllerTest : BehaviorSpec({
     Given("인증된 사용자가") {
         When("세션 목록을 조회할 때") {
             Then("페이징된 세션 목록을 반환한다") {
-                val result = mockMvc.perform(
-                    get("/api/sessions")
-                        .header("Authorization", "Bearer $authToken")
-                        .param("page", "0")
-                        .param("size", "20")
-                        .param("bookmarked", "false")
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.content").isArray)
-                    .andExpect(jsonPath("$.data.pageInfo.currentPage").value(0))
-                    .andExpect(jsonPath("$.data.pageInfo.pageSize").value(20))
-                    .andReturn()
-
-                println("세션 목록 조회 응답: ${result.response.contentAsString}")
-            }
-        }
-
-        When("북마크된 세션만 조회할 때") {
-            Then("북마크된 세션 목록만 반환한다") {
-                // 세션 북마크 설정
-                testSession.isBookmarked = true
-                sessionRepository.save(testSession)
-
-                mockMvc.perform(
-                    get("/api/sessions")
-                        .header("Authorization", "Bearer $authToken")
-                        .param("page", "0")
-                        .param("size", "20")
-                        .param("bookmarked", "true")
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.content").isArray)
-            }
-        }
-
-        When("새 세션을 시작할 때") {
-            Then("새 세션이 생성된다") {
-                val request = mapOf("counselorId" to testCounselor.id)
-
-                mockMvc.perform(
-                    post("/api/sessions")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isCreated)
-                    .andExpect(jsonPath("$.resultCode").value("201"))
-                    .andExpect(jsonPath("$.data.id").exists())
-                    .andExpect(jsonPath("$.data.counselorId").value(testCounselor.id))
-            }
-        }
-
-        When("잘못된 상담사 ID로 세션을 시작할 때") {
-            Then("400 에러를 반환한다") {
-                val request = mapOf("counselorId" to 99999L)
-
-                mockMvc.perform(
-                    post("/api/sessions")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isBadRequest)
-                    .andExpect(jsonPath("$.resultCode").value("400"))
-            }
-        }
-
-        When("세션 메시지 목록을 조회할 때") {
-            Then("페이징된 메시지 목록을 반환한다") {
-                // 테스트 메시지 생성
-                messageRepository.save(
-                    Message(
-                        sessionId = testSession.id,
-                        senderType = SenderType.USER,
-                        content = "안녕하세요",
-                        phase = CounselingPhase.ENGAGEMENT
-                    )
-                )
-
-                mockMvc.perform(
-                    get("/api/sessions/${testSession.id}/messages")
-                        .header("Authorization", "Bearer $authToken")
-                        .param("page", "0")
-                        .param("size", "20")
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.content").isArray)
-                    .andExpect(jsonPath("$.data.pageInfo.currentPage").value(0))
-            }
-        }
-
-        When("메시지를 전송할 때") {
-            Then("사용자 메시지와 AI 응답을 반환한다") {
-                val request = mapOf("content" to "안녕하세요, 고민이 있어요")
-
-                mockMvc.perform(
-                    post("/api/sessions/${testSession.id}/messages")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isCreated)
-                    .andExpect(jsonPath("$.resultCode").value("201"))
-                    .andExpect(jsonPath("$.data.userMessage").exists())
-                    .andExpect(jsonPath("$.data.aiResponse").exists())
-                    .andExpect(jsonPath("$.data.currentPhase").exists())
-            }
-        }
-
-        When("빈 메시지를 전송할 때") {
-            Then("400 에러를 반환한다") {
-                val request = mapOf("content" to "")
-
-                mockMvc.perform(
-                    post("/api/sessions/${testSession.id}/messages")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isBadRequest)
-                    .andExpect(jsonPath("$.resultCode").value("400"))
-            }
-        }
-
-        When("세션을 종료할 때") {
-            Then("세션이 종료된다") {
-                mockMvc.perform(
-                    delete("/api/sessions/${testSession.id}")
-                        .header("Authorization", "Bearer $authToken")
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.id").value(testSession.id))
-            }
-        }
-
-        When("세션을 평가할 때") {
-            Then("평가가 저장된다") {
-                val request = mapOf(
-                    "rating" to 5,
-                    "feedback" to "매우 도움이 되었습니다"
-                )
-
-                mockMvc.perform(
-                    post("/api/sessions/${testSession.id}/rate")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isCreated)
-                    .andExpect(jsonPath("$.resultCode").value("201"))
-                    .andExpect(jsonPath("$.data.sessionId").value(testSession.id))
-                    .andExpect(jsonPath("$.data.rating").value(5))
-            }
-        }
-
-        When("잘못된 평점으로 세션을 평가할 때") {
-            Then("400 에러를 반환한다") {
-                val request = mapOf("rating" to 6) // 1-5 범위 초과
-
-                mockMvc.perform(
-                    post("/api/sessions/${testSession.id}/rate")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isBadRequest)
-                    .andExpect(jsonPath("$.resultCode").value("400"))
-            }
-        }
-
-        When("세션을 북마크 토글할 때") {
-            Then("북마크 상태가 변경된다") {
-                mockMvc.perform(
-                    post("/api/sessions/${testSession.id}/bookmark")
-                        .header("Authorization", "Bearer $authToken")
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.sessionId").value(testSession.id))
-                    .andExpect(jsonPath("$.data.bookmarked").value(true))
-            }
-        }
-
-        When("세션 제목을 수정할 때") {
-            Then("제목이 변경된다") {
-                val request = mapOf("title" to "새로운 세션 제목")
-
-                mockMvc.perform(
-                    patch("/api/sessions/${testSession.id}/title")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isOk)
-                    .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.title").value("새로운 세션 제목"))
-            }
-        }
-
-        When("빈 제목으로 세션 제목을 수정할 때") {
-            Then("400 에러를 반환한다") {
-                val request = mapOf("title" to "")
-
-                mockMvc.perform(
-                    patch("/api/sessions/${testSession.id}/title")
-                        .header("Authorization", "Bearer $authToken")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                )
-                    .andExpect(status().isBadRequest)
-                    .andExpect(jsonPath("$.resultCode").value("400"))
-            }
-        }
-    }
-
-    Given("인증되지 않은 사용자가") {
-        When("세션 목록을 조회할 때") {
-            Then("401 에러를 반환한다") {
-                mockMvc.perform(get("/api/sessions"))
-                    .andExpect(status().isUnauthorized)
-                    .andExpect(jsonPath("$.resultCode").value("401"))
-                    .andExpect(jsonPath("$.msg").value("인증이 필요합니다"))
-            }
-        }
-
-        When("다른 모든 세션 API를 호출할 때") {
-            Then("401 에러를 반환한다") {
-                // POST /sessions
-                mockMvc.perform(
-                    post("/api/sessions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""{"counselorId": 1}""")
-                )
-                    .andExpect(status().isUnauthorized)
-
-                // GET /sessions/{id}/messages  
-                mockMvc.perform(get("/api/sessions/1/messages"))
-                    .andExpect(status().isUnauthorized)
-
-                // POST /sessions/{id}/messages
-                mockMvc.perform(
-                    post("/api/sessions/1/messages")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""{"content": "test"}""")
-                )
-                    .andExpect(status().isUnauthorized)
-
-                // DELETE /sessions/{id}
-                mockMvc.perform(delete("/api/sessions/1"))
-                    .andExpect(status().isUnauthorized)
-
-                // POST /sessions/{id}/rate
-                mockMvc.perform(
-                    post("/api/sessions/1/rate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""{"rating": 5}""")
-                )
-                    .andExpect(status().isUnauthorized)
-
-                // POST /sessions/{id}/bookmark
-                mockMvc.perform(post("/api/sessions/1/bookmark"))
-                    .andExpect(status().isUnauthorized)
-
-                // PATCH /sessions/{id}/title
-                mockMvc.perform(
-                    patch("/api/sessions/1/title")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""{"title": "test"}""")
-                )
-                    .andExpect(status().isUnauthorized)
-            }
-        }
-    }
-
-    Given("다른 사용자의 세션에 접근할 때") {
-        When("다른 사용자가 세션을 조작하려고 하면") {
-            Then("403 또는 404 에러를 반환한다") {
-                // 다른 사용자 생성
-                val otherUser = userRepository.save(
-                    User(
-                        email = "other@example.com",
-                        nickname = "다른유저",
-                        authProvider = AuthProvider.GOOGLE,
-                        providerId = "google-other-id"
-                    )
-                )
-                val otherToken = jwtTokenProvider.createToken(otherUser.id, otherUser.email)
-
-                // 다른 사용자가 testSession에 접근 시도
-                mockMvc.perform(
-                    get("/api/sessions/${testSession.id}/messages")
-                        .header("Authorization", "Bearer $otherToken")
-                )
-                    .andExpect(status().is4xxClientError) // 403 또는 404
+                // 테스트 구현
             }
         }
     }
 })
+```
+
+### 테스트 실행
+```bash
+./gradlew test           # 전체 테스트
+./gradlew kotest        # Kotest만 실행
+./gradlew check-all     # Ktlint + Detekt + Test
+```
+
+## 코드 품질 도구
+
+### Ktlint (코드 스타일)
+```bash
+./gradlew ktlintCheck    # 검사
+./gradlew ktlintFormat   # 자동 수정
+```
+
+### Detekt (정적 분석)
+```bash
+./gradlew detekt         # 코드 품질 분석
+```
+
+## GitHub Actions AI PR 리뷰
+
+### 설정 (.github/workflows/ai-pr-review.yml)
+- **모델 사용**:
+  - `qwen/qwen3-coder:free` - 코드 리뷰 (Services, Controllers)
+  - `deepseek/deepseek-r1-0528-qwen3-8b:free` - 구조 분석 (Entities, DTOs)
+  - `deepseek/deepseek-r1-0528:free` - 아키텍처 분석
+
+### GitHub Secrets 설정 필요
+- `OPENROUTER_API_KEY`: OpenRouter API 키
+
+## 환경 설정
+
+### 필수 환경 변수 (.env)
+```env
+# OpenRouter API
+OPENROUTER_API_KEY=your-api-key
+
+# JWT
+JWT_SECRET=your-jwt-secret
+
+# Database (Production)
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+```
+
+### application.yml 주요 설정
+```yaml
+spring:
+  profiles:
+    active: local  # local, dev, prod
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # production에서는 validate 사용
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY}
+    url: https://openrouter.ai/api/v1
+```
+
+## 주요 명령어
+
+### 빌드 및 실행
+```bash
+./gradlew build          # 빌드
+./gradlew bootRun        # 실행
+./gradlew clean build    # 클린 빌드
+```
+
+### Git 작업 흐름
+```bash
+# 새 기능 개발
+git checkout -b feature/기능명
+git add .
+git commit -m "feat: 기능 설명"
+git push -u origin feature/기능명
+gh pr create  # PR 생성 (AI 리뷰 자동 실행)
+```
+
+## 현재 작업 상태
+
+### 완료된 작업
+- ✅ 세션 API 8개 엔드포인트 구현
+- ✅ GitHub Actions AI PR 리뷰 설정
+- ✅ 글로벌 아키텍처 컴포넌트 정리
+- ✅ Kotest 테스트 프레임워크 도입
+- ✅ 다중 세션 지원 구현
+
+### 진행 중/예정
+- 🔄 DTO 클래스 타입 불일치 수정
+- 📝 통합 테스트 작성
+- 🔐 OAuth 앱 등록 및 설정
+- 🚀 배포 환경 구성
+
+## 주의사항
+
+### 코드 작성 시
+1. **Kotlin 관용구 사용**: data class, extension functions, scope functions
+2. **Spring Boot 베스트 프랙티스**: Constructor injection, @Transactional 적절히 사용
+3. **테스트 우선**: 모든 Service 메서드에 대한 테스트 작성
+4. **보안**: 절대 시크릿 키를 코드에 하드코딩하지 않음
+
+### PR 제출 전
+1. `./gradlew ktlintFormat` 실행
+2. `./gradlew test` 통과 확인
+3. 의미 있는 커밋 메시지 작성
+4. PR 템플릿 활용
+
+## 문제 해결
+
+### 일반적인 이슈
+1. **Ktlint 오류**: `./gradlew ktlintFormat --daemon`으로 자동 수정
+2. **테스트 실패**: MockK 설정 확인, @Transactional 추가
+3. **컴파일 오류**: DTO와 Entity 간 타입 매칭 확인
+
+### 디버깅 팁
+- **로그 레벨 조정**: `application-local.yml`에서 DEBUG 레벨 설정
+- **H2 콘솔**: http://localhost:8080/h2-console (개발 환경)
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+
+## 참고 자료
+- [Spring Boot 공식 문서](https://spring.io/projects/spring-boot)
+- [Kotlin 공식 문서](https://kotlinlang.org/docs/home.html)
+- [OpenRouter API 문서](https://openrouter.ai/docs)
+- [Kotest 문서](https://kotest.io/)
+
+---
+*Last Updated: 2024-12-21*
+*Version: 1.0.0*
