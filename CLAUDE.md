@@ -2,145 +2,229 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🎯 프로젝트: AI 철학자 상담 앱
-AI 철학자들이 사용자의 고민을 상담해주는 Kotlin Spring Boot 애플리케이션
+## Project Overview
 
-## 🚨 절대 준수 규칙
+AI Counseling App - A Spring Boot Kotlin application providing AI-powered philosophical counseling services through integration with OpenRouter API. The system allows users to have 1-on-1 conversations with AI counselors embodying historical philosophers and thinkers.
 
-### 코드 수정 원칙
-- **에러 시 즉시 수정 금지** - 원인 파악 후 사용자와 상의
-- **API 429/503 에러는 외부 문제** - 코드 수정하지 말 것
-- **파일 생성 전 사용자 확인 필수** - 중복 폴더/파일 방지
-- **설계 → 구현 → 테스트** 순서 준수
-- **주석 작성 금지** - 코드는 스스로 설명적이어야 함
-- **인라인 주석 절대 금지** - 메서드명과 변수명으로 의도 표현
+## Development Commands
 
-### Git 규칙
-- **커밋 메시지 한글만** - 영어 절대 금지
-- **명시적 요청 시에만 커밋** - "커밋해", "푸시해" 명령 대기
-- **형식**: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
-
-### 보안 규칙
-- **API 키는 .env 파일에만** - application.yml 직접 작성 금지
-- **환경변수 사용**: `${OPENROUTER_API_KEY}`, `${JWT_SECRET}`
-
-## 📦 핵심 명령어
-
+### Build & Run
 ```bash
-# 개발 실행
+# Run application
 ./gradlew bootRun
 
-# Swagger UI 접속
-http://localhost:8080/swagger-ui.html
+# Build project
+./gradlew build
 
-# 테스트
-./gradlew test                    # 전체 테스트
-./gradlew test --rerun-tasks      # 캐시 무시
-./gradlew test --tests "패키지.*" # 특정 테스트
-
-# 코드 품질 (필수 실행 - 커밋 전)
-./gradlew ktlintCheck    # 스타일 검사
-./gradlew ktlintFormat   # 자동 수정
-./gradlew detekt         # 정적 분석
-
-# 통합 검증
-./gradlew check          # 모든 검사 + 테스트
-./gradlew check-all      # 커스텀 통합 검사
-
-# 빌드
+# Clean build
 ./gradlew clean build
-
-# 컴파일 (의존성 다운로드 포함)
-./gradlew compileKotlin
 ```
 
-## 🏗️ 아키텍처 핵심
+### Testing
+```bash
+# Run all tests
+./gradlew test
 
-### Feature-based Package Structure
-```
-domain/
-├── user/          # User, UserRepository, UserService, UserController, UserDto
-├── counselor/     # + CounselorRating, FavoriteCounselor
-├── session/       # ChatSession + CounselingPhase enum
-└── auth/          # AuthController, OAuthTokenVerifier
+# Run specific test class
+./gradlew test --tests "*.UserServiceTest"
 
-global/
-├── config/        # SecurityConfig, WebClientConfig, CorsConfig
-├── security/      # JwtTokenProvider, JwtAuthenticationFilter  
-├── exception/     # GlobalExceptionHandler (모든 예외 처리)
-├── openrouter/    # OpenRouterService (AI API 연동)
-└── rsData/        # RsData<T> 표준 응답 포맷
+# Run with coverage
+./gradlew test jacocoTestReport
 ```
 
-### 핵심 패턴
-1. **RsData<T> 응답 포맷** - 모든 API 응답 통일
-   ```kotlin
-   RsData.of("200", "성공", data)
-   ```
+### Code Quality
+```bash
+# Ktlint check (code style)
+./gradlew ktlintCheck
 
-2. **BaseEntity 상속** - JPA Auditing 자동화
-   ```kotlin
-   @MappedSuperclass
-   abstract class BaseEntity : @Id, @CreatedDate, @LastModifiedDate
-   ```
+# Ktlint format (auto-fix style issues)
+./gradlew ktlintFormat
 
-3. **GlobalExceptionHandler** - 중앙 집중식 예외 처리
-   - `@RestControllerAdvice`로 모든 예외 캐치
-   - RsData 형식으로 에러 응답
+# Detekt analysis (code quality)
+./gradlew detekt
 
-4. **WebFlux WebClient** - OpenRouter API 비동기 호출
-   ```kotlin
-   webClient.post()
-       .bodyValue(request)
-       .retrieve()
-       .bodyToMono<Response>()
-   ```
+# Run all quality checks
+./gradlew check-all
 
-## ⚠️ 주의사항
+# Install git pre-commit hooks
+./gradlew installGitHooks
+```
 
-### Detekt 규칙
-- **매직넘버 금지** - 상수 추출 필수
-- **Generic Exception 금지** - 구체적 예외만
-- **와일드카드 임포트 금지** - 명시적 임포트
-- **메서드 길이 100줄 제한**
-- **파라미터 6개 제한**
+## Architecture & Code Organization
 
-### 테스트 전략
-- **MockK 사용** - Mockito 대신 (Kotlin 전용)
-- **Kotest BDD** - BehaviorSpec으로 시나리오 테스트
-- **@SpringBootTest** - 통합 테스트
-- **@WebMvcTest** - 컨트롤러 테스트
-- **H2 인메모리 DB** - 테스트용
+### Domain-Driven Design Structure
+The application follows DDD principles with clear bounded contexts:
 
-### OpenRouter 연동
-- **모델**: `openai/gpt-oss-20b`
-- **엔드포인트**: `https://openrouter.ai/api/v1/chat/completions`
-- **인증**: Bearer token in header
-- **WebClient 빈 사용** - RestTemplate 금지
+- **domain/** - Core business logic organized by aggregate roots
+  - Each domain module contains: controller, dto, entity, repository, service
+  - Key domains: user, counselor, session, auth
+  
+- **global/** - Cross-cutting concerns and infrastructure
+  - config: Spring configurations (Security, CORS, WebClient)
+  - security: JWT authentication and OAuth2 integration
+  - openrouter: AI API integration layer
+  - exception: Global error handling
+  - rsData/rq: Response/Request wrapper patterns
 
-## 📚 주요 라이브러리
-- **Spring Boot 3.5.4** - 코어 프레임워크
-- **Spring Data JPA** - ORM (+ JDSL for type-safe queries)
-- **Spring Security** - 인증/인가
-- **JWT (jjwt)** - 토큰 기반 인증
-- **WebFlux** - 비동기 HTTP 클라이언트
-- **SpringDoc OpenAPI** - Swagger UI 자동 생성
-- **Kotlin-logging** - 간결한 로깅
-- **Kotest** - BDD 스타일 테스트
-- **MockK** - Kotlin 모킹 라이브러리
-- **Ktlint + Detekt** - 코드 품질 도구
+### Global Components Detail
 
-## 📋 현재 상태
-- ✅ User, Counselor, Auth 도메인 완성
-- ✅ JWT 인증, 코드 품질 도구 설정
-- ✅ ChatSession 엔티티, Repository 완성
-- 🚧 ChatSession Service, DTO, Controller 진행 중
-- 🚧 Message 엔티티 구현 예정
-- ❌ OAuth 소셜 로그인, WebSocket 미구현
+#### AOP (Aspect-Oriented Programming)
+- **ResponseAspect** (`global/aspect/ResponseAspect.kt`)
+  - Intercepts all Controller methods returning RsData
+  - Automatically sets HTTP status codes based on result codes (S-1 → 200, F-* → 4xx/5xx)
+  - Applied via `@Aspect` and `@Around` annotations
+  - Ensures consistent API response handling
 
-## 🔄 개발 워크플로우
-1. Feature 브랜치 생성
-2. Entity → Repository → Service → Controller → Test 순서
-3. `./gradlew ktlintCheck detekt test` 통과 확인
-4. 한글 커밋 메시지로 커밋
-5. PR 생성 및 리뷰
+#### Base Entity
+- **BaseEntity** (`global/entity/BaseEntity.kt`)
+  - Abstract class with common fields: id, createdAt, updatedAt
+  - Uses `@MappedSuperclass` for JPA inheritance
+  - Enables JPA Auditing with `@EntityListeners(AuditingEntityListener::class)`
+  - All domain entities extend this for consistent timestamps
+
+#### Global Exception Handler
+- **GlobalExceptionHandler** (`global/exception/GlobalExceptionHandler.kt`)
+  - `@RestControllerAdvice` for centralized error handling
+  - Catches and transforms exceptions to RsData format
+  - Handles: MethodArgumentNotValidException, HttpMessageNotReadableException, custom exceptions
+  - Returns consistent error responses with appropriate HTTP status codes
+  - Example: `@ExceptionHandler(IllegalArgumentException::class)` → RsData with F-400 code
+
+#### Request/Response Wrappers
+- **RsData** (`global/rsData/RsData.kt`)
+  - Standard response wrapper: `RsData<T>(resultCode, msg, data)`
+  - Result codes: S-* for success, F-* for failure
+  - Factory methods: `RsData.of()` for success, `RsData.failOf()` for errors
+  - Integrates with ResponseAspect for automatic status mapping
+
+- **Rq** (`global/rq/Rq.kt`)
+  - Request context holder injected via `@Component` and `@RequestScope`
+  - Provides: `member` (current authenticated user), `isLogin`, `isAdmin`
+  - Simplifies authentication checks in controllers/services
+  - Usage: `rq.member ?: throw UnauthorizedException()`
+
+#### Configuration Classes
+- **SecurityConfig** (`global/config/SecurityConfig.kt`)
+  - JWT authentication filter configuration
+  - OAuth2 login settings for Google/Kakao/Naver
+  - CORS and CSRF policies
+  - Public endpoints whitelist
+
+- **JpaConfig** (`global/config/JpaConfig.kt`)
+  - `@EnableJpaAuditing` for automatic timestamps
+  - `@EnableJpaRepositories` with base packages
+  - Transaction management settings
+
+- **WebClientConfig** (`global/config/WebClientConfig.kt`)
+  - WebClient bean for OpenRouter API calls
+  - Timeout settings and error handling
+  - Connection pooling configuration
+
+#### Constants
+- **AppConstants** (`global/constants/AppConstants.kt`)
+  - Centralized constants for the entire application
+  - Error messages, default values, limits
+  - Session constants (MAX_CONVERSATION_HISTORY, TITLE_MAX_LENGTH)
+  - API response codes and messages
+
+### Key Architectural Patterns
+
+1. **Layered Architecture**: Controller → Service → Repository
+2. **Response Wrapper Pattern**: All API responses use RsData wrapper for consistent structure
+3. **Base Entity Pattern**: Common fields (id, timestamps) in BaseEntity
+4. **JWT + OAuth2**: Dual authentication strategy supporting social logins
+5. **Reactive Programming**: WebFlux for non-blocking OpenRouter API calls
+
+### Database Strategy
+- JPA with Kotlin JDSL for type-safe queries
+- H2 for development, PostgreSQL for production
+- Entity relationships properly mapped with lazy loading
+- Auditing enabled via BaseEntity
+
+## API Integration Points
+
+### OpenRouter AI Service
+- Configuration in `OpenRouterService.kt`
+- Async/reactive calls using WebClient
+- Message context management for conversations
+- Counselor personality prompts in entity definitions
+
+### OAuth2 Providers
+- Google: `GoogleTokenVerifier`
+- Kakao: `KakaoTokenVerifier`  
+- Naver: `NaverTokenVerifier`
+- Token verification and user info extraction
+
+## Testing Approach
+
+- Unit tests with MockK for mocking
+- Integration tests for API endpoints
+- Kotest for BDD-style testing
+- Spring MockMvc for controller tests
+- Test fixtures in domain test packages
+
+## Environment Configuration
+
+Required environment variables (.env file):
+- `OPENROUTER_API_KEY` - OpenRouter API key
+- `JWT_SECRET` - JWT signing secret (production)
+- `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` - Database credentials (production)
+
+Spring profiles:
+- `dev` - H2 in-memory database, debug logging
+- `prod` - PostgreSQL, optimized settings
+
+## Code Style Guidelines
+
+- Kotlin idioms preferred (data classes, extension functions, null safety)
+- Line length limit: 120 characters
+- No wildcard imports except java.util.*
+- Naming: PascalCase for classes, camelCase for functions/variables
+- Use dependency injection via constructor
+- Prefer immutable data structures
+- Follow existing patterns in codebase for consistency
+
+## Git Commit Rules
+
+- **MUST use Korean commit messages** (한국어로 커밋 메시지 작성 필수)
+- **NEVER include AI-generated markers** (절대 "Generated with Claude" 등의 AI 표시 금지)
+- Commit format: `type: 한국어 설명`
+  - feat: 새로운 기능
+  - fix: 버그 수정
+  - refactor: 리팩토링
+  - test: 테스트 추가/수정
+  - docs: 문서 수정
+  - style: 코드 스타일 수정
+- Example: `fix: 로그인 인증 버그 수정`
+
+## Security Considerations
+
+- JWT tokens in Authorization header (Bearer scheme)
+- OAuth2 tokens verified with provider APIs
+- CORS configured for specific origins
+- API keys stored in environment variables
+- Password-less authentication (OAuth2 only)
+
+## Common Development Tasks
+
+When implementing new features:
+1. Create entity in appropriate domain package
+2. Add repository interface extending JpaRepository
+3. Implement service with business logic
+4. Create DTOs for request/response
+5. Add controller with proper validation
+6. Write unit and integration tests
+7. Update API documentation if needed
+
+When modifying AI behavior:
+1. Check counselor prompts in Counselor entity
+2. Adjust OpenRouterService for API interaction
+3. Test with OpenRouterIntegrationTest
+
+## Performance Optimization Points
+
+- JPA lazy loading for relationships
+- Pagination utilities in PageUtils
+- WebFlux for non-blocking I/O
+- Response caching where appropriate
+- Database indexes on frequently queried fields

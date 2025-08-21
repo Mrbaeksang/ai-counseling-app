@@ -1,12 +1,8 @@
 package com.aicounseling.app.domain.session.entity
 
+import com.aicounseling.app.global.entity.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
@@ -16,29 +12,17 @@ import java.time.LocalDateTime
  */
 @Entity
 @Table(name = "chat_sessions")
-data class ChatSession(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+class ChatSession(
     @Column(name = "user_id", nullable = false)
     val userId: Long,
     @Column(name = "counselor_id", nullable = false)
     val counselorId: Long,
     @Column(nullable = true, length = 100)
     var title: String? = null,
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    var phase: CounselingPhase = CounselingPhase.RAPPORT,
-    @Column(name = "phase_metadata", columnDefinition = "TEXT")
-    var phaseMetadata: String = "",
-    @Column(name = "closing_suggested", nullable = false)
-    var closingSuggested: Boolean = false,
     @Column(name = "is_bookmarked", nullable = false)
     var isBookmarked: Boolean = false,
-    @Column(name = "created_at", nullable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "last_message_at")
     var lastMessageAt: LocalDateTime? = null,
     @Column(name = "closed_at")
     var closedAt: LocalDateTime? = null,
-)
+) : BaseEntity()

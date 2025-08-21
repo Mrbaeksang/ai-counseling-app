@@ -5,7 +5,7 @@ import org.springframework.web.reactive.function.client.WebClient
 
 @Service
 class OpenRouterService(
-    private val webClient: WebClient,
+    private val openRouterWebClient: WebClient,
     private val properties: OpenRouterProperties,
 ) {
     companion object {
@@ -30,7 +30,7 @@ class OpenRouterService(
                     },
             )
 
-        return webClient.post()
+        return openRouterWebClient.post()
             .uri("/chat/completions")
             .bodyValue(request)
             .retrieve()
@@ -51,7 +51,7 @@ class OpenRouterService(
             반드시 아래 JSON 형식으로만 응답해주세요:
             {
                 "content": "사용자에게 전달할 상담 응답 내용",
-                "aiPhaseAssessment": "현재 단계를 판단한 이유와 상담 진행 상황 분석",
+                "currentPhase": "이 대화에 적합한 현재 단계 ENUM 이름 (예: ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION 등)",
                 "sessionTitle": "이 대화를 요약한 15자 이내 제목"
             }
             """
@@ -60,7 +60,7 @@ class OpenRouterService(
             반드시 아래 JSON 형식으로만 응답해주세요:
             {
                 "content": "사용자에게 전달할 상담 응답 내용",
-                "aiPhaseAssessment": "현재 단계를 판단한 이유와 상담 진행 상황 분석"
+                "currentPhase": "이 대화에 적합한 현재 단계 ENUM 이름 (예: ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION 등)"
             }
             """
             }
@@ -88,7 +88,7 @@ class OpenRouterService(
                 max_tokens = DEFAULT_MAX_TOKENS,
             )
 
-        return webClient.post()
+        return openRouterWebClient.post()
             .uri("/chat/completions")
             .bodyValue(request)
             .retrieve()

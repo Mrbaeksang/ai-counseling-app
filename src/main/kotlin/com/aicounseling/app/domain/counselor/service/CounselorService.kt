@@ -9,6 +9,7 @@ import com.aicounseling.app.domain.counselor.repository.FavoriteCounselorReposit
 import com.aicounseling.app.domain.session.repository.ChatSessionRepository
 import com.aicounseling.app.domain.user.entity.User
 import com.aicounseling.app.domain.user.repository.UserRepository
+import com.aicounseling.app.global.constants.AppConstants
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.stereotype.Service
@@ -34,11 +35,6 @@ class CounselorService(
     private val userRepository: UserRepository,
     private val objectMapper: ObjectMapper,
 ) {
-    companion object {
-        private const val MIN_RATING = 1
-        private const val MAX_RATING = 5
-    }
-
     /**
      * GET /counselors/{id} - 상담사 상세 조회
      * 통계 정보 포함해서 반환
@@ -46,7 +42,7 @@ class CounselorService(
     fun findById(counselorId: Long): Counselor {
         val counselor =
             counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("상담사를 찾을 수 없습니다: $counselorId")
+                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
             }
 
         // 통계 정보 설정
@@ -118,7 +114,7 @@ class CounselorService(
     ): Counselor {
         val counselor =
             counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("상담사를 찾을 수 없습니다: $counselorId")
+                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
             }
 
         // 중복 체크
@@ -147,7 +143,7 @@ class CounselorService(
     ): Counselor {
         val counselor =
             counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("상담사를 찾을 수 없습니다: $counselorId")
+                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
             }
         favoriteCounselorRepository.deleteByUserAndCounselor(user, counselor)
 
@@ -166,23 +162,25 @@ class CounselorService(
             "이미 평가한 세션입니다"
         }
 
-        check(rating in MIN_RATING..MAX_RATING) {
-            "평점은 $MIN_RATING-$MAX_RATING 사이여야 합니다"
+        val minRating = AppConstants.Rating.MIN_RATING
+        val maxRating = AppConstants.Rating.MAX_RATING
+        check(rating in minRating..maxRating) {
+            "${AppConstants.ErrorMessages.INVALID_RATING}: $minRating-$maxRating"
         }
 
         val user =
             userRepository.findById(userId).orElseThrow {
-                IllegalArgumentException("사용자를 찾을 수 없습니다: $userId")
+                IllegalArgumentException("${AppConstants.ErrorMessages.USER_NOT_FOUND}: $userId")
             }
 
         val counselor =
             counselorRepository.findById(counselorId).orElseThrow {
-                IllegalArgumentException("상담사를 찾을 수 없습니다: $counselorId")
+                IllegalArgumentException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
             }
 
         val session =
             sessionRepository.findById(sessionId).orElseThrow {
-                IllegalArgumentException("세션을 찾을 수 없습니다: $sessionId")
+                IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
             }
 
         val counselorRating =
@@ -214,5 +212,14 @@ class CounselorService(
         } else {
             0.0 // 평가 없으면 0점
         }
+    }
+
+    /**
+     * 특정 상담사가 진행한 총 세션 수 조회
+     * @param counselorId 상담사 ID
+     * @return 총 세션 수
+     */
+    fun getSessionCount(counselorId: Long): Long {
+        return sessionRepository.countByCounselorId(counselorId)
     }
 }

@@ -71,7 +71,6 @@ class AuthService(
                     authProvider = authProvider,
                     providerId = oauthInfo.providerId,
                     isActive = true,
-                    createdAt = LocalDateTime.now(),
                     lastLoginAt = LocalDateTime.now(),
                 )
             userRepository.save(newUser)

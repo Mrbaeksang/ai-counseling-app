@@ -2,7 +2,6 @@ package com.aicounseling.app.global.exception
 
 import com.aicounseling.app.global.rsData.RsData
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -11,45 +10,35 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<RsData<Map<String, String>>> {
+    fun handleValidationException(e: MethodArgumentNotValidException): RsData<Map<String, String>> {
         val errors =
             e.bindingResult.allErrors
                 .filterIsInstance<FieldError>()
                 .associate { it.field to (it.defaultMessage ?: "Invalid value") }
 
-        return ResponseEntity
-            .badRequest()
-            .body(RsData("400", "입력값이 올바르지 않습니다", errors))
+        return RsData("400", "입력값이 올바르지 않습니다", errors)
     }
 
     @ExceptionHandler(BusinessException::class)
-    fun handleBusinessException(e: BusinessException): ResponseEntity<RsData<Nothing>> {
-        return ResponseEntity
-            .status(e.status)
-            .body(RsData(e.status.value().toString(), e.message))
+    fun handleBusinessException(e: BusinessException): RsData<Nothing> {
+        return RsData(e.status.value().toString(), e.message)
     }
 
     @ExceptionHandler(NoSuchElementException::class)
-    fun handleNotFoundException(e: NoSuchElementException): ResponseEntity<RsData<Nothing>> {
-        return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
-            .body(RsData("404", e.message ?: "리소스를 찾을 수 없습니다"))
+    fun handleNotFoundException(e: NoSuchElementException): RsData<Nothing> {
+        return RsData("404", e.message ?: "리소스를 찾을 수 없습니다")
     }
 
     @ExceptionHandler(IllegalStateException::class)
-    fun handleConflictException(e: IllegalStateException): ResponseEntity<RsData<Nothing>> {
-        return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body(RsData("409", e.message ?: "요청이 충돌합니다"))
+    fun handleConflictException(e: IllegalStateException): RsData<Nothing> {
+        return RsData("409", e.message ?: "요청이 충돌합니다")
     }
 
     @ExceptionHandler(Exception::class)
     fun handleException(
         @Suppress("UNUSED_PARAMETER") e: Exception,
-    ): ResponseEntity<RsData<Nothing>> {
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(RsData("500", "서버 오류가 발생했습니다"))
+    ): RsData<Nothing> {
+        return RsData("500", "서버 오류가 발생했습니다")
     }
 }
 

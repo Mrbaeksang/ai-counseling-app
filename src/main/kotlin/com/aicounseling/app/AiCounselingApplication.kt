@@ -4,9 +4,13 @@ import io.github.cdimascio.dotenv.dotenv
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.EnableAspectJAutoProxy
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableAspectJAutoProxy
+@EnableJpaAuditing
 class AiCounselingApplication
 
 fun main(args: Array<String>) {
