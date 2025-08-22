@@ -18,15 +18,8 @@ interface MessageRepository : JpaRepository<Message, Long> {
 
     fun countBySessionId(sessionId: Long): Long
 
-    fun findTopBySessionIdOrderByCreatedAtDesc(sessionId: Long): Message?
-
     fun findTopBySessionIdAndSenderTypeOrderByCreatedAtDesc(
         sessionId: Long,
         senderType: SenderType,
     ): Message?
-
-    fun existsBySessionIdAndSenderType(
-        sessionId: Long,
-        senderType: SenderType,
-    ): Boolean
 }

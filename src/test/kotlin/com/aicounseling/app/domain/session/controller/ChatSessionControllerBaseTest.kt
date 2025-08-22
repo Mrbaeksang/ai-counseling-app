@@ -10,32 +10,33 @@ import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.kotest.core.spec.style.BehaviorSpec
-import io.mockk.mockk
+import io.github.cdimascio.dotenv.dotenv
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Primary
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.transaction.annotation.Transactional
 
 /**
  * 공통 테스트 설정
+ * 실제 API 호출을 위해 Mock 제거
  */
 @TestConfiguration
 class TestConfig {
-    @Bean
-    @Primary
-    fun mockOpenRouterService(): OpenRouterService = mockk()
+    // 실제 OpenRouterService를 사용하도록 Mock 제거
+    // API 키는 @DynamicPropertySource로 주입
 }
 
 /**
  * ChatSessionController 테스트 기본 클래스
  * 공통 설정과 헬퍼 메서드 제공
  */
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
@@ -48,25 +49,37 @@ abstract class ChatSessionControllerBaseTest(
     protected val sessionRepository: ChatSessionRepository,
     protected val messageRepository: MessageRepository,
     protected val openRouterService: OpenRouterService,
-) : BehaviorSpec() {
+) {
+    companion object {
+        private val dotenv =
+            dotenv {
+                ignoreIfMissing = true
+            }
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun properties(registry: DynamicPropertyRegistry) {
+            // CI 환경에서는 환경변수, 로컬에서는 .env 파일 사용
+            val apiKey =
+                System.getenv("OPENROUTER_API_KEY")
+                    ?: dotenv["OPENROUTER_API_KEY"]
+                    ?: "test-api-key" // CI에서는 실제 API를 호출하지 않도록 더미 키 사용
+
+            registry.add("openrouter.api-key") { apiKey }
+            registry.add("jwt.secret") {
+                System.getenv("JWT_SECRET")
+                    ?: dotenv["JWT_SECRET"]
+                    ?: "test-jwt-secret-key-for-jwt-auth-512-bits-long-2024-with-extra-characters-for-security"
+            }
+        }
+    }
+
     protected lateinit var testUser: User
     protected lateinit var testCounselor: Counselor
     protected lateinit var authToken: String
 
-    init {
-        beforeEach {
-            setupTestData()
-        }
-
-        afterEach {
-            cleanupTestData()
-        }
-    }
-
-    /**
-     * 테스트 데이터 초기화
-     */
-    private fun setupTestData() {
+    @BeforeEach
+    fun setupTestData() {
         // 테스트 사용자 생성
         testUser =
             userRepository.save(
@@ -95,10 +108,8 @@ abstract class ChatSessionControllerBaseTest(
         authToken = jwtTokenProvider.createToken(testUser.id, testUser.email)
     }
 
-    /**
-     * 테스트 데이터 정리
-     */
-    private fun cleanupTestData() {
+    @AfterEach
+    fun cleanupTestData() {
         messageRepository.deleteAll()
         sessionRepository.deleteAll()
         counselorRepository.deleteAll()

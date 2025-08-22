@@ -49,8 +49,9 @@ class SecurityConfig(
                         response.writer.write(
                             objectMapper.writeValueAsString(
                                 mapOf(
-                                    "resultCode" to "401",
-                                    "msg" to "인증이 필요합니다",
+                                    "resultCode" to "F-401",
+                                    "msg" to "로그인이 필요합니다",
+                                    "data" to null,
                                 ),
                             ),
                         )
@@ -61,8 +62,9 @@ class SecurityConfig(
                         response.writer.write(
                             objectMapper.writeValueAsString(
                                 mapOf(
-                                    "resultCode" to "403",
+                                    "resultCode" to "F-403",
                                     "msg" to "권한이 없습니다",
+                                    "data" to null,
                                 ),
                             ),
                         )

@@ -103,6 +103,14 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+
+    // JDK 21+ 호환성을 위한 JVM 옵션
+    jvmArgs(
+        // 동적 agent 로딩 허용
+        "-XX:+EnableDynamicAgentLoading",
+        // agent 사용 추적 비활성화
+        "-Djdk.instrument.traceUsage=false",
+    )
 }
 
 // Ktlint 설정
