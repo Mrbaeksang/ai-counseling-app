@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@org.springframework.context.annotation.Import(com.aicounseling.app.domain.session.controller.TestConfig::class)
+@org.springframework.context.annotation.Import(com.aicounseling.app.config.TestOpenRouterConfig::class)
 class OpenRouterIntegrationTest {
     companion object {
         private val dotenv =

@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("ChatSession 통합 테스트 - 실제 API 호출")
-@org.springframework.context.annotation.Import(com.aicounseling.app.domain.session.controller.TestConfig::class)
+@org.springframework.context.annotation.Import(com.aicounseling.app.config.TestOpenRouterConfig::class)
 class ChatSessionIntegrationTest
     @Autowired
     constructor(

@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("POST /api/sessions/{id}/messages - 메시지 전송")
-@org.springframework.context.annotation.Import(TestConfig::class)
+@org.springframework.context.annotation.Import(com.aicounseling.app.config.TestOpenRouterConfig::class)
 class SendMessageApiTest
     @Autowired
     constructor(
