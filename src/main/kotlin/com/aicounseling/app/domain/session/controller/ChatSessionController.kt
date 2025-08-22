@@ -8,7 +8,6 @@ import com.aicounseling.app.domain.session.dto.SendMessageRequest
 import com.aicounseling.app.domain.session.dto.SendMessageResponse
 import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
-import com.aicounseling.app.domain.session.entity.ChatSession
 import com.aicounseling.app.domain.session.service.ChatSessionService
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
@@ -163,7 +162,11 @@ class ChatSessionController(
         return RsData.of(
             "S-1",
             "메시지 전송 성공",
-            SendMessageResponse.from(userMessage, aiMessage, session),
+            SendMessageResponse(
+                userMessage = userMessage.content,
+                aiMessage = aiMessage.content,
+                sessionTitle = if (session.title != "새 상담") session.title else null,
+            ),
         )
     }
 
@@ -234,17 +237,17 @@ class ChatSessionController(
     fun updateSessionTitle(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: UpdateSessionTitleRequest,
-    ): RsData<ChatSession> {
+    ): RsData<Any?> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val session = sessionService.updateSessionTitle(sessionId, userId, request.title)
+        sessionService.updateSessionTitle(sessionId, userId, request.title)
 
         return RsData.of(
             "S-1",
             "세션 제목 변경 성공",
-            session,
+            null,
         )
     }
 }

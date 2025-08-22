@@ -26,8 +26,9 @@ class CounselorRating(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     val session: ChatSession,
+    // 1~10 (별 0.5개 = 1, 별 5개 = 10)
     @Column(nullable = false)
-    val rating: Double,
+    val rating: Int,
     @Column(columnDefinition = "TEXT")
     val review: String? = null,
 ) : BaseEntity()

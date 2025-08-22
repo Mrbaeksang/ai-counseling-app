@@ -35,7 +35,7 @@ object AppConstants {
 
     object Rating {
         const val MIN_RATING = 1
-        const val MAX_RATING = 5
+        const val MAX_RATING = 10 // 별 0.5개 = 1, 별 5개 = 10
     }
 
     object Cache {

@@ -31,7 +31,10 @@
       "mcp__github__list_pull_requests",
       "mcp__github__get_pull_request_status",
       "Bash(gh run list:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "mcp__github__get_pull_request",
+      "mcp__github__get_pull_request_files",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
