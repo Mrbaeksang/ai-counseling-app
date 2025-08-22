@@ -117,7 +117,7 @@ jobs:
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                  model: 'deepseek/deepseek-r1-0528:free',  // DeepSeek R1 추론 모델
+                  model: 'qwen/qwen3-235b-a22b-2507',  // Qwen3 235B 모델로 변경
                   messages: [{
                     role: 'system',
                     content: `당신은 AI Counseling App 프로젝트의 코드 리뷰어입니다.
@@ -218,7 +218,7 @@ jobs:
             overallReview += `- [ ] 보안 취약점은 없는가?\n\n`;
             
             overallReview += `---\n`;
-            overallReview += `*🤖 AI Review powered by DeepSeek R1 (추론 모델) via OpenRouter*\n`;
+            overallReview += `*🤖 AI Review powered by Qwen3 235B via OpenRouter*\n`;
             overallReview += `*⏱️ Reviewed at: ${new Date().toISOString()}*`;
             
             // 최종 리뷰 제출

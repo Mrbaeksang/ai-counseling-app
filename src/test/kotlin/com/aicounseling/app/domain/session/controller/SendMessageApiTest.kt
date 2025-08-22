@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.cdimascio.dotenv.dotenv
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("POST /api/sessions/{id}/messages - 메시지 전송")
+@org.springframework.context.annotation.Import(TestConfig::class)
 class SendMessageApiTest
     @Autowired
     constructor(
@@ -84,7 +84,6 @@ class SendMessageApiTest
 
         @Test
         @DisplayName("인증된 사용자가 세션에 메시지를 전송하면 AI 응답을 받을 수 있다")
-        @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
         fun `should send message and receive AI response`() {
             // Given
             val session =
@@ -131,7 +130,6 @@ class SendMessageApiTest
 
         @Test
         @DisplayName("두 번째 메시지에도 세션 제목이 응답에 포함된다")
-        @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
         fun `should include session title for non-first message`() {
             // Given
             val session =

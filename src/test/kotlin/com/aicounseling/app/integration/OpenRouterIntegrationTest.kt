@@ -4,7 +4,6 @@ import com.aicounseling.app.global.openrouter.OpenRouterService
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.context.annotation.Import(com.aicounseling.app.domain.session.controller.TestConfig::class)
 class OpenRouterIntegrationTest {
     companion object {
         private val dotenv =
@@ -46,7 +46,6 @@ class OpenRouterIntegrationTest {
     private lateinit var openRouterService: OpenRouterService
 
     @Test
-    @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
     fun `OpenRouter API 연결 테스트`() {
         runBlocking {
             val response =
@@ -61,7 +60,6 @@ class OpenRouterIntegrationTest {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
     fun `상담 메시지 JSON 형식 응답 테스트`() {
         runBlocking {
             val response =

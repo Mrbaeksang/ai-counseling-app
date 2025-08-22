@@ -11,11 +11,15 @@ import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.cdimascio.dotenv.dotenv
+import io.mockk.coEvery
+import io.mockk.mockk
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -24,12 +28,44 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 공통 테스트 설정
- * 실제 API 호출을 위해 Mock 제거
+ * CI 환경 감지하여 Mock 사용 여부 결정
  */
 @TestConfiguration
 class TestConfig {
-    // 실제 OpenRouterService를 사용하도록 Mock 제거
-    // API 키는 @DynamicPropertySource로 주입
+    companion object {
+        fun shouldUseMock(): Boolean {
+            val isCI = System.getenv("CI") != null || System.getenv("GITHUB_ACTIONS") != null
+            val apiKey = System.getenv("OPENROUTER_API_KEY")
+            val hasValidApiKey = apiKey != null && apiKey.startsWith("sk-or-")
+
+            // CI 환경이고 유효한 API 키가 없으면 Mock 사용
+            return isCI && !hasValidApiKey
+        }
+    }
+
+    @Bean
+    @Primary
+    fun testOpenRouterService(
+        @Autowired(required = false) realService: OpenRouterService?,
+    ): OpenRouterService {
+        return if (shouldUseMock()) {
+            // CI 환경에서는 Mock 사용
+            mockk<OpenRouterService>().apply {
+                coEvery { sendMessage(any(), any()) } returns "테스트 AI 응답입니다. 철학적 상담을 제공합니다."
+                coEvery { sendCounselingMessage(any(), any(), any()) } returns
+                    """
+                    {
+                        "content": "당신의 마음을 이해합니다. 함께 이야기를 나누어보시겠어요?",
+                        "currentPhase": "UNDERSTANDING",
+                        "sessionTitle": "철학 상담 세션"
+                    }
+                    """.trimIndent()
+            }
+        } else {
+            // 로컬 환경에서는 실제 서비스 사용
+            realService ?: error("Real OpenRouterService not available")
+        }
+    }
 }
 
 /**
