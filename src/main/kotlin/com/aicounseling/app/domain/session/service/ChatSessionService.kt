@@ -340,7 +340,8 @@ class ChatSessionService(
                 // 에러 발생 시 로깅 및 처리
                 logger.error("AI 응답 요청 실패 - sessionId: {}, error: {}", sessionId, e.message, e)
                 handleAiResponseError(session, content, isFirstMessage)
-                return Pair(savedUserMessage, createErrorMessage(session, userPhase))
+                val errorMessage = createErrorMessage(session, userPhase)
+                return Triple(savedUserMessage, errorMessage, session)
             }
 
         // 8. AI 응답 파싱
