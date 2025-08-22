@@ -246,7 +246,7 @@ class ChatSessionService(
      * @param sessionId 메시지를 전송할 세션 ID
      * @param userId 사용자 ID (권한 확인용)
      * @param content 사용자 메시지 내용
-     * @return 사용자 메시지와 AI 응답 메시지 쌍
+     * @return 사용자 메시지, AI 응답 메시지, 업데이트된 세션
      * @throws IllegalArgumentException 세션을 찾을 수 없거나 메시지 내용이 비어있는 경우
      * @throws IllegalStateException 이미 종료된 세션인 경우
      */
@@ -254,7 +254,7 @@ class ChatSessionService(
         sessionId: Long,
         userId: Long,
         content: String,
-    ): Pair<Message, Message> {
+    ): Triple<Message, Message, ChatSession> {
         check(content.isNotBlank()) { "메시지 내용을 입력해주세요" }
 
         val session =
@@ -366,9 +366,9 @@ class ChatSessionService(
 
         // 11. 세션 정보 업데이트
         session.lastMessageAt = LocalDateTime.now()
-        sessionRepository.save(session)
+        val updatedSession = sessionRepository.save(session)
 
-        return Pair(savedUserMessage, aiMessage)
+        return Triple(savedUserMessage, aiMessage, updatedSession)
     }
 
     /**
