@@ -14,6 +14,7 @@ import io.github.cdimascio.dotenv.dotenv
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -111,6 +112,7 @@ class ChatSessionIntegrationTest
 
         @Test
         @DisplayName("실제 OpenRouter API를 통한 메시지 전송 테스트")
+        @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
         fun `should send message and receive real AI response`() {
             // Given
             val session =
@@ -163,6 +165,7 @@ class ChatSessionIntegrationTest
 
         @Test
         @DisplayName("연속 대화 - 컨텍스트 유지 테스트")
+        @EnabledIfEnvironmentVariable(named = "OPENROUTER_API_KEY", matches = ".+")
         fun `should maintain conversation context`() {
             // Given - 세션 생성
             val session =
