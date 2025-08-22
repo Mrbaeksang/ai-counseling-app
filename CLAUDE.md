@@ -323,6 +323,7 @@ Spring profiles:
 
 ## Code Style Guidelines
 
+### General Kotlin Style
 - Kotlin idioms preferred (data classes, extension functions, null safety)
 - Line length limit: 120 characters
 - No wildcard imports except java.util.*
@@ -331,8 +332,41 @@ Spring profiles:
 - Prefer immutable data structures
 - Follow existing patterns in codebase for consistency
 
-## Git Commit Rules
+### Comment Placement Rules (Ktlint)
+- **NEVER place comments inside value argument lists** (인라인 주석 금지)
+- **ALWAYS place comments on separate lines above the code** (주석은 항상 별도 줄에)
+- Incorrect example:
+  ```kotlin
+  val request = RateSessionRequest(
+      rating = 10, // 1~10 범위 (별 5개 = 10) ❌
+      feedback = "좋아요"
+  )
+  ```
+- Correct example:
+  ```kotlin
+  // 1~10 범위 (별 5개 = 10)
+  val request = RateSessionRequest(
+      rating = 10,
+      feedback = "좋아요"
+  )
+  ```
+- For multi-line expressions, place comments before or after the entire block
+- Trailing comments on the same line are only allowed for variable declarations
 
+## Git Workflow & Commit Rules
+
+### Branch Strategy & PR Workflow
+- **NEVER push directly to main branch** (절대 main 브랜치에 직접 푸시 금지)
+- **ALWAYS create feature branch and PR** (항상 feature 브랜치 생성 후 PR 생성)
+- Branch naming convention:
+  - `feat/기능명` - 새로운 기능
+  - `fix/버그명` - 버그 수정
+  - `refactor/대상` - 리팩토링
+  - `test/테스트명` - 테스트 추가/수정
+  - `docs/문서명` - 문서 수정
+- PR creation command: `gh pr create --title "제목" --body "설명"`
+
+### Commit Messages
 - **MUST use Korean commit messages** (한국어로 커밋 메시지 작성 필수)
 - **NEVER include AI-generated markers** (절대 "Generated with Claude" 등의 AI 표시 금지)
 - Commit format: `type: 한국어 설명`
