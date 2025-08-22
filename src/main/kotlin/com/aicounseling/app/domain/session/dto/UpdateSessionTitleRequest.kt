@@ -17,7 +17,7 @@ data class UpdateSessionTitleRequest(
         max = AppConstants.Validation.MAX_TITLE_LENGTH,
         message =
             "제목은 ${AppConstants.Validation.MIN_TITLE_LENGTH}~" +
-                "${AppConstants.Validation.MAX_TITLE_LENGTH}자로 입력해주세요",
+                "${AppConstants.Validation.MAX_TITLE_LENGTH}자 사이로 입력해주세요",
     )
     val title: String,
 )

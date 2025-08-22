@@ -9,6 +9,7 @@ import com.aicounseling.app.domain.session.dto.SendMessageResponse
 import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
 import com.aicounseling.app.domain.session.service.ChatSessionService
+import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import io.swagger.v3.oas.annotations.Operation
@@ -149,15 +150,12 @@ class ChatSessionController(
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val (userMessage, aiMessage) =
+        val (userMessage, aiMessage, session) =
             sessionService.sendMessage(
                 sessionId = sessionId,
                 userId = userId,
                 content = request.content,
             )
-
-        // 세션 정보 조회 (제목 업데이트 확인용)
-        val session = sessionService.getSession(sessionId, userId)
 
         return RsData.of(
             "S-1",
@@ -165,7 +163,7 @@ class ChatSessionController(
             SendMessageResponse(
                 userMessage = userMessage.content,
                 aiMessage = aiMessage.content,
-                sessionTitle = if (session.title != "새 상담") session.title else null,
+                sessionTitle = if (session.title != AppConstants.Session.DEFAULT_SESSION_TITLE) session.title else null,
             ),
         )
     }
