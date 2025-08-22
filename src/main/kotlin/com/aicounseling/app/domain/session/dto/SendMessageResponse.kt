@@ -1,26 +1,12 @@
 package com.aicounseling.app.domain.session.dto
 
-import com.aicounseling.app.domain.session.entity.ChatSession
-import com.aicounseling.app.domain.session.entity.Message
-
+/**
+ * 메시지 전송 응답 DTO
+ *
+ * @property sessionTitle 첫 메시지 후 타이틀 생성 시에만 포함
+ */
 data class SendMessageResponse(
-    val userMessage: MessageResponse,
-    val aiMessage: MessageResponse,
+    val userMessage: String,
+    val aiMessage: String,
     val sessionTitle: String? = null,
-    // AI가 판단한 현재 상담 단계 (한글명)
-    val currentPhase: String? = null,
-) {
-    companion object {
-        fun from(
-            userMessage: Message,
-            aiMessage: Message,
-            session: ChatSession? = null,
-        ) = SendMessageResponse(
-            userMessage = MessageResponse.from(userMessage),
-            aiMessage = MessageResponse.from(aiMessage),
-            sessionTitle = session?.title,
-            // AI 메시지의 phase를 사용 (AI가 최종 판단)
-            currentPhase = aiMessage.phase.koreanName,
-        )
-    }
-}
+)

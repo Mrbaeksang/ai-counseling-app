@@ -188,7 +188,8 @@ class CounselorService(
                 user = user,
                 counselor = counselor,
                 session = session,
-                rating = rating.toDouble(),
+                // Int 그대로 사용 (1~10)
+                rating = rating,
                 review = feedback,
             )
 
@@ -203,12 +204,13 @@ class CounselorService(
     /**
      * 평균 평점 계산 (내부 헬퍼 메서드)
      * CounselorRating 테이블에서 평점만 추출해서 평균 계산
+     * rating은 1~10 정수이므로 /2 하여 0.5~5.0 별점으로 변환
      */
     private fun calculateAverageRating(counselorId: Long): Double {
         val ratings = ratingRepository.findByCounselorId(counselorId)
 
         return if (ratings.isNotEmpty()) {
-            ratings.map { it.rating }.average() // rating 필드만 추출해서 평균
+            ratings.map { it.rating }.average() / 2.0 // 1~10 평균을 0.5~5.0으로 변환
         } else {
             0.0 // 평가 없으면 0점
         }

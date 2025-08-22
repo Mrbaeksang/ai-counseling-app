@@ -6,6 +6,12 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
+/**
+ * 세션 평가 요청 DTO
+ *
+ * @property rating 1~10 정수 (별 0.5개 = 1, 별 5개 = 10)
+ * @property feedback 선택적 피드백 메시지
+ */
 data class RateSessionRequest(
     @field:NotNull(message = "평점을 입력해주세요")
     @field:Min(
