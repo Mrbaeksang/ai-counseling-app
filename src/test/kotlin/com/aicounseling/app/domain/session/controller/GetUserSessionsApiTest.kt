@@ -88,8 +88,10 @@ class GetUserSessionsApiTest
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
                 .andExpect(jsonPath("$.msg").value("세션 목록 조회 성공"))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(3))
+                .andExpect(jsonPath("$.data.pageInfo.currentPage").value(0))
+                .andExpect(jsonPath("$.data.pageInfo.totalElements").value(3))
         }
 
         @Test
@@ -129,7 +131,7 @@ class GetUserSessionsApiTest
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.msg").value("북마크된 세션 조회 성공"))
-                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.content.length()").value(2))
         }
 
         @Test
@@ -153,7 +155,7 @@ class GetUserSessionsApiTest
                     .header("Authorization", "Bearer $authToken"),
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.length()").value(20))
+                .andExpect(jsonPath("$.data.content.length()").value(20))
 
             // When & Then: 두 번째 페이지 (5개)
             mockMvc.perform(
@@ -163,7 +165,7 @@ class GetUserSessionsApiTest
                     .header("Authorization", "Bearer $authToken"),
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.length()").value(5))
+                .andExpect(jsonPath("$.data.content.length()").value(5))
         }
 
         @Test

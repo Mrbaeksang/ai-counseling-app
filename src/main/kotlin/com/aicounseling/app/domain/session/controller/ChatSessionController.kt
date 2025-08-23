@@ -10,12 +10,13 @@ import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
 import com.aicounseling.app.domain.session.service.ChatSessionService
 import com.aicounseling.app.global.constants.AppConstants
+import com.aicounseling.app.global.pagination.PageUtils
+import com.aicounseling.app.global.pagination.PagedResponse
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -56,18 +57,41 @@ class ChatSessionController(
         @RequestParam(required = false) bookmarked: Boolean?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<SessionListResponse>> {
+    ): RsData<PagedResponse<SessionListResponse>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
-        val sessions = sessionService.getUserSessions(userId, bookmarked, pageable)
+        // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
+        val pageable =
+            PageUtils.createPageRequest(
+                page = page,
+                size = size,
+                sort = Sort.by(Sort.Direction.DESC, "lastMessageAt"),
+            )
+        val sessionPage = sessionService.getUserSessionsWithPage(userId, bookmarked, pageable)
+
+        // PagedResponse로 메타데이터 포함하여 응답
+        val response =
+            PagedResponse(
+                content =
+                    sessionPage.content.map { session ->
+                        val counselor = sessionService.getCounselorInfo(session.counselorId)
+                        SessionListResponse(
+                            sessionId = session.id,
+                            title = session.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
+                            counselorName = counselor.name,
+                            lastMessageAt = session.lastMessageAt ?: session.createdAt,
+                            isBookmarked = session.isBookmarked,
+                        )
+                    },
+                pageInfo = PageUtils.toPageInfo(sessionPage),
+            )
 
         return RsData.of(
             "S-1",
             if (bookmarked == true) "북마크된 세션 조회 성공" else "세션 목록 조회 성공",
-            sessions,
+            response,
         )
     }
 
@@ -122,18 +146,31 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<MessageItem>> {
+    ): RsData<PagedResponse<MessageItem>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"))
-        val messages = sessionService.getSessionMessages(sessionId, userId, pageable)
+        // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
+        val pageable =
+            PageUtils.createPageRequest(
+                page = page,
+                size = size,
+                sort = Sort.by(Sort.Direction.ASC, "createdAt"),
+            )
+        val messagePage = sessionService.getSessionMessagesWithPage(sessionId, userId, pageable)
+
+        // PagedResponse로 메타데이터 포함하여 응답
+        val response =
+            PagedResponse(
+                content = messagePage.content.map { MessageItem.from(it) },
+                pageInfo = PageUtils.toPageInfo(messagePage),
+            )
 
         return RsData.of(
             "S-1",
             "메시지 조회 성공",
-            messages,
+            response,
         )
     }
 

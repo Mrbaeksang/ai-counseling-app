@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -67,6 +68,34 @@ class ChatSessionService(
             )
         }
     }
+
+    /**
+     * 사용자의 상담 세션 목록 조회 (Page 객체 반환)
+     * PageUtils와 함께 사용하기 위한 새로운 메서드
+     * @param userId 조회할 사용자 ID
+     * @param bookmarked 북마크 필터 (null이면 전체, true면 북마크만)
+     * @param pageable 페이징 정보 (PageUtils로 생성된 것 권장)
+     * @return Page<ChatSession> 페이징 정보를 포함한 세션 목록
+     */
+    @Transactional(readOnly = true)
+    fun getUserSessionsWithPage(
+        userId: Long,
+        bookmarked: Boolean?,
+        pageable: Pageable,
+    ): org.springframework.data.domain.Page<ChatSession> {
+        return if (bookmarked == true) {
+            sessionRepository.findByUserIdAndIsBookmarked(userId, true, pageable)
+        } else {
+            sessionRepository.findByUserId(userId, pageable)
+        }
+    }
+
+    /**
+     * 상담사 정보 조회 헬퍼 메서드
+     * Controller에서 counselor 정보를 가져오기 위한 메서드
+     */
+    @Transactional(readOnly = true)
+    fun getCounselorInfo(counselorId: Long) = counselorService.findById(counselorId)
 
     /**
      * 새로운 상담 세션 시작
@@ -228,6 +257,25 @@ class ChatSessionService(
                 senderType = message.senderType.name,
             )
         }
+    }
+
+    /**
+     * 세션의 메시지 목록 조회 (Page 객체 반환)
+     * PageUtils와 함께 사용하기 위한 새로운 메서드
+     * @param sessionId 조회할 세션 ID
+     * @param userId 사용자 ID (권한 확인용)
+     * @param pageable 페이징 정보 (PageUtils로 생성된 것 권장)
+     * @return Page<Message> 페이징 정보를 포함한 메시지 목록
+     * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
+     */
+    @Transactional(readOnly = true)
+    fun getSessionMessagesWithPage(
+        sessionId: Long,
+        userId: Long,
+        pageable: Pageable,
+    ): Page<Message> {
+        getSession(sessionId, userId) // 권한 확인용
+        return messageRepository.findBySessionId(sessionId, pageable)
     }
 
     /**

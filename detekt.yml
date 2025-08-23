@@ -57,6 +57,12 @@ style:
     active: true
   SafeCast:
     active: true
+  # 미사용 임포트 검사 (TypeScript ESLint의 no-unused-imports와 유사)
+  UnusedImports:
+    active: true
+  # 미사용 private 멤버 검사 (TypeScript ESLint의 no-unused-vars와 유사)
+  UnusedPrivateMember:
+    active: true
 
 naming:
   active: true
