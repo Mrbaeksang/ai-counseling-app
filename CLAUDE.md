@@ -99,9 +99,10 @@ The application follows DDD principles with clear bounded contexts:
 
 - **Rq** (`global/rq/Rq.kt`)
   - Request context holder injected via `@Component` and `@RequestScope`
-  - Provides: `member` (current authenticated user), `isLogin`, `isAdmin`
-  - Simplifies authentication checks in controllers/services
-  - Usage: `rq.member ?: throw UnauthorizedException()`
+  - Provides: `currentUserId` (from JWT), `currentUser` (for OAuth2), `isAuthenticated`
+  - Simplifies authentication checks in controllers
+  - Usage: `val userId = rq.currentUserId ?: return RsData.of("F-401", "인증 필요", null)`
+  - Note: Only handles authentication context, not response generation
 
 #### Configuration Classes
 - **SecurityConfig** (`global/config/SecurityConfig.kt`)
@@ -110,27 +111,20 @@ The application follows DDD principles with clear bounded contexts:
   - CORS and CSRF policies
   - Public endpoints whitelist
 
-- **JpaConfig** (`global/config/JpaConfig.kt`)
-  - `@EnableJpaAuditing` for automatic timestamps
-  - `@EnableJpaRepositories` with base packages
-  - Transaction management settings
-
-- **JdslConfig** (`global/config/JdslConfig.kt`)
-  - JpqlRenderContext bean for JDSL query rendering
-  - JpqlRenderer bean for query execution
-  - JDSL 3.5.5 configuration for type-safe JPQL
 
 - **WebClientConfig** (`global/config/WebClientConfig.kt`)
-  - WebClient bean for OpenRouter API calls
-  - Timeout settings and error handling
-  - Connection pooling configuration
+  - WebClient bean configuration
+  - Currently unused (OpenRouter and OAuth verifiers use their own WebClient)
+  - Will be utilized when OAuth2 Client is activated
+  - Max in-memory size configuration for buffering
 
 #### Constants
 - **AppConstants** (`global/constants/AppConstants.kt`)
   - Centralized constants for the entire application
+  - Response codes: SUCCESS_CODE = "S-1", UNAUTHORIZED_CODE = "F-401", etc.
   - Error messages, default values, limits
   - Session constants (MAX_CONVERSATION_HISTORY, TITLE_MAX_LENGTH)
-  - API response codes and messages
+  - Validation limits, pagination settings, cache TTL values
 
 ### Key Architectural Patterns
 
@@ -143,10 +137,10 @@ The application follows DDD principles with clear bounded contexts:
 7. **Custom Repository Pattern**: Complex queries via `RepositoryCustom` + `RepositoryImpl`
 
 ### Database Strategy  
-- JPA with Kotlin JDSL 3.5.5 for type-safe queries
+- JPA with Kotlin JDSL 3.5.5 for type-safe queries (AutoConfiguration enabled)
 - H2 for development, PostgreSQL for production
 - Entity relationships properly mapped with lazy loading
-- Auditing enabled via BaseEntity
+- Auditing enabled via BaseEntity and @EnableJpaAuditing in main application
 - Custom Repository pattern for complex queries (N+1 문제 해결)
 
 ## API Integration Points
@@ -171,7 +165,6 @@ The application follows DDD principles with clear bounded contexts:
 - **MockK 1.13.8**: Kotlin-first mocking library (NOT Mockito)
 - **SpringMockK 4.0.2**: Spring integration for MockK
 - **Spring MockMvc**: Controller/API testing
-- **Kotest 5.7.2**: Available for BDD-style specs
 
 ### Critical Configuration for Spring Boot 3.5 + Kotlin
 
@@ -314,7 +307,6 @@ mockMvc.perform(
 - **Test actual JSON responses** with jsonPath assertions
 - **Clean up test data** in @AfterEach to prevent conflicts
 - **Keep test files under 150 lines** for Detekt compliance
-- **Use Kotest 5.7.2** for BDD-style testing when needed
 
 ## Environment Configuration
 

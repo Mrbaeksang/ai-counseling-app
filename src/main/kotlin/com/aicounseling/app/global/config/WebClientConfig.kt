@@ -4,6 +4,13 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.reactive.function.client.WebClient
 
+/**
+ * WebClient 전역 설정
+ *
+ * OAuth2 Client 활성화 시 자동으로 사용됨
+ * 현재는 OpenRouter와 OAuth Token Verifier가 자체 WebClient 사용 중
+ * 향후 OAuth2 활성화 후 WebClient 통합 검토 예정
+ */
 @Configuration
 class WebClientConfig {
     companion object {

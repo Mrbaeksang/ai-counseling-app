@@ -3,6 +3,7 @@ package com.aicounseling.app.domain.user.controller
 import com.aicounseling.app.domain.user.dto.NicknameUpdateRequest
 import com.aicounseling.app.domain.user.dto.UserResponse
 import com.aicounseling.app.domain.user.service.UserService
+import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
@@ -22,12 +23,13 @@ class UserController(
     fun getMyInfo(): RsData<UserResponse> {
         val userId =
             rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
 
         val user = userService.getUser(userId)
-        return rq.successResponse(
-            data = UserResponse.from(user),
-            message = "조회 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "사용자 정보 조회 성공",
+            UserResponse.from(user),
         )
     }
 
@@ -37,7 +39,7 @@ class UserController(
     ): RsData<UserResponse> {
         val userId =
             rq.currentUserId
-                ?: return rq.unauthorizedResponse("로그인이 필요합니다")
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
 
         val updatedUser =
             userService.changeNickname(
@@ -45,9 +47,10 @@ class UserController(
                 request.nickname,
             )
 
-        return rq.successResponse(
-            data = UserResponse.from(updatedUser),
-            message = "닉네임 변경 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "닉네임 변경 성공",
+            UserResponse.from(updatedUser),
         )
     }
 }

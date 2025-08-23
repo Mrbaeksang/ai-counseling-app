@@ -4,6 +4,7 @@ import com.aicounseling.app.domain.counselor.dto.CounselorDetailResponse
 import com.aicounseling.app.domain.counselor.dto.CounselorListResponse
 import com.aicounseling.app.domain.counselor.service.CounselorService
 import com.aicounseling.app.domain.user.service.UserService
+import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -42,9 +43,10 @@ class CounselorController(
                 )
             }
 
-        return rq.successResponse(
-            data = response,
-            message = "상담사 목록 조회 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "상담사 목록 조회 성공",
+            response,
         )
     }
 
@@ -66,9 +68,10 @@ class CounselorController(
                 averageRating = counselor.averageRating,
             )
 
-        return rq.successResponse(
-            data = response,
-            message = "상담사 조회 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "상담사 조회 성공",
+            response,
         )
     }
 
@@ -76,7 +79,7 @@ class CounselorController(
     fun getFavoriteCounselors(): RsData<List<CounselorListResponse>> {
         val userId =
             rq.currentUserId
-                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "인증이 필요합니다", null)
 
         val user = userService.getUser(userId)
         val counselors = counselorService.getFavoriteCounselors(user)
@@ -93,9 +96,10 @@ class CounselorController(
                 )
             }
 
-        return rq.successResponse(
-            data = response,
-            message = "즐겨찾기 목록 조회 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "즐겨찾기 목록 조회 성공",
+            response,
         )
     }
 
@@ -105,7 +109,7 @@ class CounselorController(
     ): RsData<String> {
         val userId =
             rq.currentUserId
-                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "인증이 필요합니다", null)
 
         val user = userService.getUser(userId)
         val counselor =
@@ -127,7 +131,7 @@ class CounselorController(
     ): RsData<String> {
         val userId =
             rq.currentUserId
-                ?: return rq.unauthorizedResponse("인증이 필요합니다")
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "인증이 필요합니다", null)
 
         val user = userService.getUser(userId)
         val counselor =

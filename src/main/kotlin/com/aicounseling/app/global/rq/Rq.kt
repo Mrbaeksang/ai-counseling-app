@@ -1,7 +1,6 @@
 package com.aicounseling.app.global.rq
 
 import com.aicounseling.app.domain.user.entity.User
-import com.aicounseling.app.global.rsData.RsData
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.context.annotation.RequestScope
@@ -25,6 +24,8 @@ class Rq {
                 null
             }
 
+    // OAuth2 UserService 구현 시 활용 예정
+    // OAuth2 로그인 시 OAuth2User를 User 엔티티로 변환하여 사용
     val currentUser: User?
         get() =
             if (isAuthenticated) {
@@ -32,15 +33,4 @@ class Rq {
             } else {
                 null
             }
-
-    fun <T> successResponse(
-        data: T,
-        message: String = "성공",
-    ): RsData<T> {
-        return RsData.of("S-1", message, data)
-    }
-
-    fun <T> unauthorizedResponse(message: String = "인증이 필요합니다"): RsData<T> {
-        return RsData.of("F-401", message, null)
-    }
 }
