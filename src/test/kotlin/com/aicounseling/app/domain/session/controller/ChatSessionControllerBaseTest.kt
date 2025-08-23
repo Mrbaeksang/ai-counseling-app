@@ -74,8 +74,9 @@ abstract class ChatSessionControllerBaseTest(
     @BeforeEach
     fun setupTestData() {
         // Mock 설정
-        coEvery { openRouterService.sendMessage(any(), any()) } returns "테스트 AI 응답입니다. 철학적 상담을 제공합니다."
-        coEvery { openRouterService.sendCounselingMessage(any(), any(), any()) } returns
+        coEvery { openRouterService.sendMessage(any(), any(), any()) } returns "테스트 AI 응답입니다. 철학적 상담을 제공합니다."
+        // sendCounselingMessage는 4개의 파라미터를 받음: userMessage, counselorPrompt, conversationHistory, includeTitle
+        coEvery { openRouterService.sendCounselingMessage(any(), any(), any(), any()) } returns
             """{"content":"당신의 마음을 이해합니다.","currentPhase":"ENGAGEMENT","sessionTitle":"상담"}"""
 
         // 테스트 사용자 생성
