@@ -69,24 +69,11 @@ class ChatSessionController(
                 size = size,
                 sort = Sort.by(Sort.Direction.DESC, "lastMessageAt"),
             )
-        val sessionPage = sessionService.getUserSessionsWithPage(userId, bookmarked, pageable)
+        // N+1 문제가 이미 해결된 getUserSessions 호출
+        val sessionPage = sessionService.getUserSessions(userId, bookmarked, pageable)
 
-        // PagedResponse로 메타데이터 포함하여 응답
-        val response =
-            PagedResponse(
-                content =
-                    sessionPage.content.map { session ->
-                        val counselor = sessionService.getCounselorInfo(session.counselorId)
-                        SessionListResponse(
-                            sessionId = session.id,
-                            title = session.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
-                            counselorName = counselor.name,
-                            lastMessageAt = session.lastMessageAt ?: session.createdAt,
-                            isBookmarked = session.isBookmarked,
-                        )
-                    },
-                pageInfo = PageUtils.toPageInfo(sessionPage),
-            )
+        // PagedResponse로 변환 (이미 SessionListResponse로 매핑됨)
+        val response = PagedResponse.from(sessionPage)
 
         return RsData.of(
             "S-1",
@@ -158,14 +145,11 @@ class ChatSessionController(
                 size = size,
                 sort = Sort.by(Sort.Direction.ASC, "createdAt"),
             )
-        val messagePage = sessionService.getSessionMessagesWithPage(sessionId, userId, pageable)
+        // 수정된 getSessionMessages 호출 (이제 Page<MessageItem> 반환)
+        val messagePage = sessionService.getSessionMessages(sessionId, userId, pageable)
 
-        // PagedResponse로 메타데이터 포함하여 응답
-        val response =
-            PagedResponse(
-                content = messagePage.content.map { MessageItem.from(it) },
-                pageInfo = PageUtils.toPageInfo(messagePage),
-            )
+        // PagedResponse로 변환 (이미 MessageItem으로 매핑됨)
+        val response = PagedResponse.from(messagePage)
 
         return RsData.of(
             "S-1",
