@@ -71,9 +71,13 @@ The application follows DDD principles with clear bounded contexts:
 #### AOP (Aspect-Oriented Programming)
 - **ResponseAspect** (`global/aspect/ResponseAspect.kt`)
   - Intercepts all Controller methods returning RsData
-  - Automatically sets HTTP status codes based on result codes (S-1 → 200, F-* → 4xx/5xx)
+  - Automatically sets HTTP status codes based on result codes:
+    - S-* codes (success) → always HTTP 200 OK
+    - F-* codes (failure) → mapped to appropriate HTTP status (F-401 → 401, F-404 → 404, etc.)
+    - Validates HTTP status code range (100-599) to prevent exceptions
   - Applied via `@Aspect` and `@Around` annotations
   - Ensures consistent API response handling
+  - Disabled in test profile via `@Profile("!test")` to prevent ClassCastException
 
 #### Base Entity
 - **BaseEntity** (`global/entity/BaseEntity.kt`)
