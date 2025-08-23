@@ -34,7 +34,7 @@ class OpenRouterConfig {
 @ConfigurationProperties(prefix = "openrouter")
 data class OpenRouterProperties(
     val apiKey: String,
-    val model: String = "openai/gpt-oss-20b",
+    val model: String = "meta-llama/llama-3.2-3b-instruct",
     val siteUrl: String = "http://localhost:8080",
     val siteName: String = "AI Counseling App",
 )

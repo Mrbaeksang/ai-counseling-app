@@ -11,7 +11,6 @@ import com.aicounseling.app.domain.user.repository.UserRepository
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.cdimascio.dotenv.dotenv
-
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -132,7 +131,7 @@ class SendMessageApiTest
             messages.forEachIndexed { index, msg ->
                 println("메시지[$index]: ${msg.senderType} - ${msg.content}")
             }
-            
+
             assert(messages.size == 2)
             assert(messages[0].content == userMessageContent)
             assert(messages[0].senderType == SenderType.USER)
