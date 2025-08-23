@@ -24,14 +24,5 @@ interface ChatSessionRepository : JpaRepository<ChatSession, Long> {
         userId: Long,
     ): ChatSession?
 
-    fun findByUserIdAndClosedAtIsNull(userId: Long): List<ChatSession>
-
-    fun findByUserIdAndCounselorIdAndClosedAtIsNull(
-        userId: Long,
-        counselorId: Long,
-    ): ChatSession?
-
-    fun countByUserIdAndClosedAtIsNull(userId: Long): Long
-
     fun countByCounselorId(counselorId: Long): Long
 }

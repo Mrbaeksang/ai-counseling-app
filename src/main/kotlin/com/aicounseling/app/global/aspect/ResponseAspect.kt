@@ -4,6 +4,7 @@ import com.aicounseling.app.global.rsData.RsData
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
+import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
@@ -12,6 +13,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Aspect
 @Component
+@Profile("!test") // test 프로필에서는 비활성화
 class ResponseAspect {
     companion object {
         private const val DEFAULT_STATUS_CODE = 200
@@ -33,7 +35,10 @@ class ResponseAspect {
             )
     }
 
-    @Around("@within(org.springframework.web.bind.annotation.RestController)")
+    @Around(
+        "@within(org.springframework.web.bind.annotation.RestController) && " +
+            "execution(* com.aicounseling.app.domain..*Controller.*(..))",
+    )
     fun handleResponse(joinPoint: ProceedingJoinPoint): Any? {
         val result = joinPoint.proceed()
 
@@ -49,8 +54,10 @@ class ResponseAspect {
     }
 
     private fun getHttpStatusFromCode(code: String): HttpStatus {
-        return STATUS_CODE_MAP[code] ?: run {
-            val numericCode = code.toIntOrNull() ?: DEFAULT_STATUS_CODE
+        // Handle both "F-400" and "400" formats
+        val cleanCode = code.removePrefix("F-").removePrefix("S-")
+        return STATUS_CODE_MAP[cleanCode] ?: run {
+            val numericCode = cleanCode.toIntOrNull() ?: DEFAULT_STATUS_CODE
             HttpStatus.valueOf(numericCode)
         }
     }

@@ -109,9 +109,7 @@ class ChatSessionService(
         sessionId: Long,
         userId: Long,
     ) {
-        val session =
-            sessionRepository.findByIdAndUserId(sessionId, userId)
-                ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        val session = getSession(sessionId, userId)
 
         check(session.closedAt == null) {
             AppConstants.ErrorMessages.SESSION_ALREADY_CLOSED
@@ -137,9 +135,7 @@ class ChatSessionService(
         rating: Int,
         feedback: String?,
     ): CounselorRating {
-        val session =
-            sessionRepository.findByIdAndUserId(sessionId, userId)
-                ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        val session = getSession(sessionId, userId)
 
         check(session.closedAt != null) {
             "진행 중인 세션은 평가할 수 없습니다"
@@ -166,9 +162,7 @@ class ChatSessionService(
         sessionId: Long,
         userId: Long,
     ): Boolean {
-        val session =
-            sessionRepository.findByIdAndUserId(sessionId, userId)
-                ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        val session = getSession(sessionId, userId)
 
         session.isBookmarked = !session.isBookmarked
         sessionRepository.save(session)
@@ -183,8 +177,7 @@ class ChatSessionService(
      * @return 조회된 세션
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
-    @Transactional(readOnly = true)
-    fun getSession(
+    private fun getSession(
         sessionId: Long,
         userId: Long,
     ): ChatSession {
@@ -205,9 +198,7 @@ class ChatSessionService(
         userId: Long,
         newTitle: String,
     ): ChatSession {
-        val session =
-            sessionRepository.findByIdAndUserId(sessionId, userId)
-                ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        val session = getSession(sessionId, userId)
 
         session.title = newTitle.trim()
         return sessionRepository.save(session)
@@ -227,8 +218,7 @@ class ChatSessionService(
         userId: Long,
         pageable: Pageable,
     ): List<MessageItem> {
-        sessionRepository.findByIdAndUserId(sessionId, userId)
-            ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        getSession(sessionId, userId) // 권한 확인용
 
         val messages = messageRepository.findBySessionId(sessionId, pageable)
 
@@ -257,9 +247,7 @@ class ChatSessionService(
     ): Triple<Message, Message, ChatSession> {
         check(content.isNotBlank()) { "메시지 내용을 입력해주세요" }
 
-        val session =
-            sessionRepository.findByIdAndUserId(sessionId, userId)
-                ?: throw IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
+        val session = getSession(sessionId, userId)
 
         check(session.closedAt == null) { AppConstants.ErrorMessages.SESSION_ALREADY_CLOSED }
 
@@ -303,7 +291,7 @@ class ChatSessionService(
 
         // 6. AI 프롬프트 구성 (모든 가능한 단계와 현재 상황 판단 요청)
         val phaseOptions =
-            CounselingPhase.values().joinToString("\n") {
+            CounselingPhase.entries.joinToString("\n") {
                 "- ${it.name}(${it.koreanName}): ${it.description}"
             }
 

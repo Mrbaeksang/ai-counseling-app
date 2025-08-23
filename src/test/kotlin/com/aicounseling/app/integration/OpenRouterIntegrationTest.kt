@@ -3,16 +3,21 @@ package com.aicounseling.app.integration
 import com.aicounseling.app.global.openrouter.OpenRouterService
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.transaction.annotation.Transactional
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "CI", matches = "true")
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
 class OpenRouterIntegrationTest {
     companion object {
         private val dotenv =
@@ -42,7 +47,6 @@ class OpenRouterIntegrationTest {
     private lateinit var openRouterService: OpenRouterService
 
     @Test
-    @Disabled("실제 API 호출 테스트 - 로컬에서만 수동 실행")
     fun `OpenRouter API 연결 테스트`() {
         runBlocking {
             val response =
@@ -57,7 +61,6 @@ class OpenRouterIntegrationTest {
     }
 
     @Test
-    @Disabled("실제 API 호출 테스트 - 수동으로만 실행")
     fun `상담 메시지 JSON 형식 응답 테스트`() {
         runBlocking {
             val response =
@@ -69,7 +72,7 @@ class OpenRouterIntegrationTest {
 
             println("Counseling Response: $response")
             assert(response.contains("content"))
-            assert(response.contains("aiPhaseAssessment"))
+            assert(response.contains("currentPhase")) // aiPhaseAssessment -> currentPhase로 변경됨
             assert(response.contains("sessionTitle"))
         }
     }

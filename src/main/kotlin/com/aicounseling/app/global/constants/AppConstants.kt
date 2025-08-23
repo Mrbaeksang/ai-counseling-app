@@ -55,6 +55,7 @@ object AppConstants {
         const val DUPLICATE_NICKNAME = "이미 사용 중인 닉네임입니다"
         const val SESSION_ALREADY_ACTIVE = "이미 진행 중인 세션이 있습니다"
         const val SESSION_ALREADY_CLOSED = "이미 종료된 세션입니다"
+        const val SESSION_ALREADY_RATED = "이미 평가된 세션입니다"
         const val INVALID_RATING = "유효하지 않은 평점입니다"
         const val AI_RESPONSE_ERROR = "AI 응답을 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요."
     }

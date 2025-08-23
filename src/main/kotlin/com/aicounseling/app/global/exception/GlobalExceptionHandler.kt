@@ -16,29 +16,29 @@ class GlobalExceptionHandler {
                 .filterIsInstance<FieldError>()
                 .associate { it.field to (it.defaultMessage ?: "Invalid value") }
 
-        return RsData("400", "입력값이 올바르지 않습니다", errors)
+        return RsData("F-400", "입력값이 올바르지 않습니다", errors)
     }
 
     @ExceptionHandler(BusinessException::class)
     fun handleBusinessException(e: BusinessException): RsData<Nothing> {
-        return RsData(e.status.value().toString(), e.message)
+        return RsData("F-${e.status.value()}", e.message)
     }
 
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFoundException(e: NoSuchElementException): RsData<Nothing> {
-        return RsData("404", e.message ?: "리소스를 찾을 수 없습니다")
+        return RsData("F-404", e.message ?: "리소스를 찾을 수 없습니다")
     }
 
     @ExceptionHandler(IllegalStateException::class)
     fun handleConflictException(e: IllegalStateException): RsData<Nothing> {
-        return RsData("409", e.message ?: "요청이 충돌합니다")
+        return RsData("F-409", e.message ?: "요청이 충돌합니다")
     }
 
     @ExceptionHandler(Exception::class)
     fun handleException(
         @Suppress("UNUSED_PARAMETER") e: Exception,
     ): RsData<Nothing> {
-        return RsData("500", "서버 오류가 발생했습니다")
+        return RsData("F-500", "서버 오류가 발생했습니다")
     }
 }
 
