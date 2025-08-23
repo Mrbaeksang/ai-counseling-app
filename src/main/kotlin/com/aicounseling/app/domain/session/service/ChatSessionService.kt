@@ -56,10 +56,6 @@ class ChatSessionService(
         return sessionRepository.findSessionsWithCounselor(userId, bookmarked, pageable)
     }
 
-
-
-
-
     /**
      * 새로운 상담 세션 시작
      * @param userId 사용자 ID
@@ -214,16 +210,16 @@ class ChatSessionService(
 
         val messages = messageRepository.findBySessionId(sessionId, pageable)
 
-        val content = messages.content.map { message ->
-            MessageItem(
-                content = message.content,
-                senderType = message.senderType.name,
-            )
-        }
-        
+        val content =
+            messages.content.map { message ->
+                MessageItem(
+                    content = message.content,
+                    senderType = message.senderType.name,
+                )
+            }
+
         return PageImpl(content, messages.pageable, messages.totalElements)
     }
-
 
     /**
      * 사용자 메시지 전송 및 AI 응답 생성
