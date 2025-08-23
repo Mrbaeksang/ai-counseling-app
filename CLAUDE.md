@@ -115,6 +115,11 @@ The application follows DDD principles with clear bounded contexts:
   - `@EnableJpaRepositories` with base packages
   - Transaction management settings
 
+- **JdslConfig** (`global/config/JdslConfig.kt`)
+  - JpqlRenderContext bean for JDSL query rendering
+  - JpqlRenderer bean for query execution
+  - JDSL 3.5.5 configuration for type-safe JPQL
+
 - **WebClientConfig** (`global/config/WebClientConfig.kt`)
   - WebClient bean for OpenRouter API calls
   - Timeout settings and error handling
@@ -134,12 +139,15 @@ The application follows DDD principles with clear bounded contexts:
 3. **Base Entity Pattern**: Common fields (id, timestamps) in BaseEntity
 4. **JWT + OAuth2**: Dual authentication strategy supporting social logins
 5. **Reactive Programming**: WebFlux for non-blocking OpenRouter API calls
+6. **PagedResponse Pattern**: Standardized pagination with metadata (`PagedResponse<T>`)
+7. **Custom Repository Pattern**: Complex queries via `RepositoryCustom` + `RepositoryImpl`
 
-### Database Strategy
-- JPA with Kotlin JDSL for type-safe queries
+### Database Strategy  
+- JPA with Kotlin JDSL 3.5.5 for type-safe queries
 - H2 for development, PostgreSQL for production
 - Entity relationships properly mapped with lazy loading
 - Auditing enabled via BaseEntity
+- Custom Repository pattern for complex queries (N+1 문제 해결)
 
 ## API Integration Points
 
@@ -296,9 +304,6 @@ mockMvc.perform(
 
 # Run with detailed output
 ./gradlew test --info
-
-# Run tests and generate report
-./gradlew test jacocoTestReport
 ```
 
 ### Test Best Practices for Spring Boot 3.5
@@ -309,6 +314,7 @@ mockMvc.perform(
 - **Test actual JSON responses** with jsonPath assertions
 - **Clean up test data** in @AfterEach to prevent conflicts
 - **Keep test files under 150 lines** for Detekt compliance
+- **Use Kotest 5.7.2** for BDD-style testing when needed
 
 ## Environment Configuration
 
@@ -316,6 +322,8 @@ Required environment variables (.env file):
 - `OPENROUTER_API_KEY` - OpenRouter API key
 - `JWT_SECRET` - JWT signing secret (production)
 - `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` - Database credentials (production)
+
+Default AI Model: `meta-llama/llama-3.2-3b-instruct` (configured in OpenRouterConfig)
 
 Spring profiles:
 - `dev` - H2 in-memory database, debug logging
@@ -409,3 +417,52 @@ When modifying AI behavior:
 - WebFlux for non-blocking I/O
 - Response caching where appropriate
 - Database indexes on frequently queried fields
+- N+1 query prevention with JDSL Custom Repository pattern
+
+## N+1 Query Problem Solutions
+
+### Using JDSL Custom Repository Pattern
+When dealing with N+1 queries, use the Custom Repository pattern with JDSL:
+
+```kotlin
+// 1. Create Custom interface
+interface ChatSessionRepositoryCustom {
+    fun findSessionsWithCounselor(
+        userId: Long, 
+        bookmarked: Boolean?,
+        pageable: Pageable
+    ): Page<SessionListResponse>
+}
+
+// 2. Implement with JDSL (no @Repository annotation)
+class ChatSessionRepositoryImpl(
+    private val kotlinJdslJpqlExecutor: KotlinJdslJpqlExecutor
+) : ChatSessionRepositoryCustom {
+    override fun findSessionsWithCounselor(...): Page<SessionListResponse> {
+        return kotlinJdslJpqlExecutor.findPage(pageable) {
+            selectNew<SessionListResponse>(
+                path(ChatSession::id),
+                path(Counselor::name),
+                // ... other fields
+            ).from(
+                entity(ChatSession::class),
+                join(Counselor::class).on(
+                    path(ChatSession::counselorId).eq(path(Counselor::id))
+                )
+            )
+        }
+    }
+}
+
+// 3. Main repository extends both interfaces
+@Repository
+interface ChatSessionRepository : 
+    JpaRepository<ChatSession, Long>, 
+    ChatSessionRepositoryCustom
+```
+
+### Key Points for N+1 Prevention
+- Use `selectNew<DTO>()` for direct DTO projection
+- JOIN related entities in single query
+- Don't extend `KotlinJdslJpqlExecutor` directly in main repository
+- Return non-nullable types after INNER JOIN

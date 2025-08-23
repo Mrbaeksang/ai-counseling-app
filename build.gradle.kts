@@ -56,9 +56,6 @@ dependencies {
     implementation("com.linecorp.kotlin-jdsl:jpql-render:3.5.5")
     implementation("com.linecorp.kotlin-jdsl:spring-data-jpa-support:3.5.5")
 
-    // Logging
-    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
-
     // API Documentation (Swagger)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
@@ -75,18 +72,10 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
-
-    // Kotest
-    testImplementation("io.kotest:kotest-runner-junit5:5.7.2")
-    testImplementation("io.kotest:kotest-assertions-core:5.7.2")
-    testImplementation("io.kotest:kotest-property:5.7.2")
-    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
