@@ -32,7 +32,6 @@ class CloseSessionApiTest
         counselorRepository: com.aicounseling.app.domain.counselor.repository.CounselorRepository,
         sessionRepository: com.aicounseling.app.domain.session.repository.ChatSessionRepository,
         messageRepository: com.aicounseling.app.domain.session.repository.MessageRepository,
-        openRouterService: com.aicounseling.app.global.openrouter.OpenRouterService,
     ) : ChatSessionControllerBaseTest(
             mockMvc,
             objectMapper,
@@ -41,7 +40,6 @@ class CloseSessionApiTest
             counselorRepository,
             sessionRepository,
             messageRepository,
-            openRouterService,
         ) {
         companion object {
             private val dotenv =

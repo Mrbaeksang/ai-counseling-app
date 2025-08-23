@@ -16,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@org.springframework.context.annotation.Import(com.aicounseling.app.config.TestOpenRouterConfig::class)
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "CI", matches = "true")
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
 class OpenRouterIntegrationTest {
     companion object {
         private val dotenv =

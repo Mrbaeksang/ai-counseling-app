@@ -42,7 +42,8 @@ import org.springframework.transaction.annotation.Transactional
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("ChatSession 통합 테스트 - 실제 API 호출")
-@org.springframework.context.annotation.Import(com.aicounseling.app.config.TestOpenRouterConfig::class)
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "CI", matches = "true")
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
 class ChatSessionIntegrationTest
     @Autowired
     constructor(

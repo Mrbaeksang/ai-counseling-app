@@ -8,7 +8,6 @@ import com.aicounseling.app.domain.session.entity.SenderType
 import com.aicounseling.app.domain.session.repository.ChatSessionRepository
 import com.aicounseling.app.domain.session.repository.MessageRepository
 import com.aicounseling.app.domain.user.repository.UserRepository
-import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.cdimascio.dotenv.dotenv
@@ -44,7 +43,6 @@ class GetSessionMessagesApiTest
         counselorRepository: CounselorRepository,
         sessionRepository: ChatSessionRepository,
         messageRepository: MessageRepository,
-        openRouterService: OpenRouterService,
     ) : ChatSessionControllerBaseTest(
             mockMvc,
             objectMapper,
@@ -53,7 +51,6 @@ class GetSessionMessagesApiTest
             counselorRepository,
             sessionRepository,
             messageRepository,
-            openRouterService,
         ) {
         companion object {
             private val dotenv =

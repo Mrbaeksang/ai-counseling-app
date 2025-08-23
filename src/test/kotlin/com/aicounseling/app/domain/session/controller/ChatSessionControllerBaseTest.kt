@@ -10,7 +10,9 @@ import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.ninjasquad.springmockk.MockkBean
 import io.github.cdimascio.dotenv.dotenv
+import io.mockk.coEvery
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -37,8 +39,10 @@ abstract class ChatSessionControllerBaseTest(
     protected val counselorRepository: CounselorRepository,
     protected val sessionRepository: ChatSessionRepository,
     protected val messageRepository: MessageRepository,
-    protected val openRouterService: OpenRouterService,
 ) {
+    @MockkBean(relaxed = true)
+    protected lateinit var openRouterService: OpenRouterService
+
     companion object {
         private val dotenv =
             dotenv {
@@ -69,6 +73,11 @@ abstract class ChatSessionControllerBaseTest(
 
     @BeforeEach
     fun setupTestData() {
+        // Mock 설정
+        coEvery { openRouterService.sendMessage(any(), any()) } returns "테스트 AI 응답입니다. 철학적 상담을 제공합니다."
+        coEvery { openRouterService.sendCounselingMessage(any(), any(), any()) } returns
+            """{"content":"당신의 마음을 이해합니다.","currentPhase":"ENGAGEMENT","sessionTitle":"상담"}"""
+
         // 테스트 사용자 생성
         testUser =
             userRepository.save(
