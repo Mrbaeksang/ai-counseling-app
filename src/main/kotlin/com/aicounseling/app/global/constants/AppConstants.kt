@@ -44,6 +44,14 @@ object AppConstants {
         const val SESSION_CACHE_TTL = 1800L // 30 minutes
     }
 
+    object Response {
+        const val SUCCESS_CODE = "S-1"
+        const val UNAUTHORIZED_CODE = "F-401"
+        const val BAD_REQUEST_CODE = "F-400"
+        const val NOT_FOUND_CODE = "F-404"
+        const val SERVER_ERROR_CODE = "F-500"
+    }
+
     object ErrorMessages {
         const val USER_NOT_FOUND = "사용자를 찾을 수 없습니다"
         const val COUNSELOR_NOT_FOUND = "상담사를 찾을 수 없습니다"

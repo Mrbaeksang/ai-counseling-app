@@ -4,7 +4,7 @@ import com.aicounseling.app.domain.auth.dto.AuthResponse
 import com.aicounseling.app.domain.auth.dto.OAuthLoginRequest
 import com.aicounseling.app.domain.auth.dto.RefreshTokenRequest
 import com.aicounseling.app.domain.auth.service.AuthService
-import com.aicounseling.app.global.rq.Rq
+import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
 import kotlinx.coroutines.reactor.awaitSingle
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/auth")
 class AuthController(
     private val authService: AuthService,
-    private val rq: Rq,
 ) {
     @PostMapping("/login/google")
     fun loginWithGoogle(
@@ -26,9 +25,10 @@ class AuthController(
     ): RsData<AuthResponse> =
         runBlocking {
             val response = authService.loginWithOAuth(request.token, "GOOGLE").awaitSingle()
-            rq.successResponse(
-                data = response,
-                message = "구글 로그인 성공",
+            RsData.of(
+                AppConstants.Response.SUCCESS_CODE,
+                "구글 로그인 성공",
+                response,
             )
         }
 
@@ -38,9 +38,10 @@ class AuthController(
     ): RsData<AuthResponse> =
         runBlocking {
             val response = authService.loginWithOAuth(request.token, "KAKAO").awaitSingle()
-            rq.successResponse(
-                data = response,
-                message = "카카오 로그인 성공",
+            RsData.of(
+                AppConstants.Response.SUCCESS_CODE,
+                "카카오 로그인 성공",
+                response,
             )
         }
 
@@ -50,9 +51,10 @@ class AuthController(
     ): RsData<AuthResponse> =
         runBlocking {
             val response = authService.loginWithOAuth(request.token, "NAVER").awaitSingle()
-            rq.successResponse(
-                data = response,
-                message = "네이버 로그인 성공",
+            RsData.of(
+                AppConstants.Response.SUCCESS_CODE,
+                "네이버 로그인 성공",
+                response,
             )
         }
 
@@ -61,9 +63,10 @@ class AuthController(
         @Valid @RequestBody request: RefreshTokenRequest,
     ): RsData<AuthResponse> {
         val response = authService.refreshToken(request.refreshToken)
-        return rq.successResponse(
-            data = response,
-            message = "토큰 갱신 성공",
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "토큰 갱신 성공",
+            response,
         )
     }
 }

@@ -32,9 +32,12 @@ class CorsConfig(
 
 @ConfigurationProperties(prefix = "cors")
 data class CorsProperties(
-    val allowedOrigins: List<String> = listOf("*"),
+    // OAuth2 리다이렉트를 위해 구체적인 origin 필요
+    // "*"와 allowCredentials=true는 함께 사용 불가
+    val allowedOrigins: List<String> = listOf("http://localhost:3000"),
     val allowedMethods: List<String> = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS"),
     val allowedHeaders: List<String> = listOf("*"),
+    // OAuth2 쿠키 전송에 필요
     val allowCredentials: Boolean = true,
     val maxAge: Long = 3600,
 )
