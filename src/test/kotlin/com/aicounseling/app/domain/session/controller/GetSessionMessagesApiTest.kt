@@ -136,17 +136,17 @@ class GetSessionMessagesApiTest
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
                 .andExpect(jsonPath("$.msg").value("메시지 조회 성공"))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(4))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(4))
                 // 첫 번째 메시지 검증
-                .andExpect(jsonPath("$.data[0].content").value(messages[0].content))
-                .andExpect(jsonPath("$.data[0].senderType").value("USER"))
+                .andExpect(jsonPath("$.data.content[0].content").value(messages[0].content))
+                .andExpect(jsonPath("$.data.content[0].senderType").value("USER"))
                 // 두 번째 메시지 검증
-                .andExpect(jsonPath("$.data[1].content").value(messages[1].content))
-                .andExpect(jsonPath("$.data[1].senderType").value("AI"))
+                .andExpect(jsonPath("$.data.content[1].content").value(messages[1].content))
+                .andExpect(jsonPath("$.data.content[1].senderType").value("AI"))
                 // 나머지 메시지 검증
-                .andExpect(jsonPath("$.data[2].content").value(messages[2].content))
-                .andExpect(jsonPath("$.data[3].content").value(messages[3].content))
+                .andExpect(jsonPath("$.data.content[2].content").value(messages[2].content))
+                .andExpect(jsonPath("$.data.content[3].content").value(messages[3].content))
         }
 
         @Test
@@ -185,9 +185,9 @@ class GetSessionMessagesApiTest
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
-                .andExpect(jsonPath("$.data.length()").value(10))
-                .andExpect(jsonPath("$.data[0].content").value("메시지 1"))
-                .andExpect(jsonPath("$.data[9].content").value("메시지 10"))
+                .andExpect(jsonPath("$.data.content.length()").value(10))
+                .andExpect(jsonPath("$.data.content[0].content").value("메시지 1"))
+                .andExpect(jsonPath("$.data.content[9].content").value("메시지 10"))
 
             // When & Then - 두 번째 페이지 (5개)
             mockMvc.perform(
@@ -198,9 +198,9 @@ class GetSessionMessagesApiTest
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
-                .andExpect(jsonPath("$.data.length()").value(5))
-                .andExpect(jsonPath("$.data[0].content").value("메시지 11"))
-                .andExpect(jsonPath("$.data[4].content").value("메시지 15"))
+                .andExpect(jsonPath("$.data.content.length()").value(5))
+                .andExpect(jsonPath("$.data.content[0].content").value("메시지 11"))
+                .andExpect(jsonPath("$.data.content[4].content").value("메시지 15"))
         }
 
         @Test
@@ -223,8 +223,8 @@ class GetSessionMessagesApiTest
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
                 .andExpect(jsonPath("$.msg").value("메시지 조회 성공"))
-                .andExpect(jsonPath("$.data").isArray)
-                .andExpect(jsonPath("$.data.length()").value(0))
+                .andExpect(jsonPath("$.data.content").isArray)
+                .andExpect(jsonPath("$.data.content.length()").value(0))
         }
 
         @Test
@@ -337,6 +337,6 @@ class GetSessionMessagesApiTest
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
-                .andExpect(jsonPath("$.data.length()").value(20)) // 기본 size=20
+                .andExpect(jsonPath("$.data.content.length()").value(20)) // 기본 size=20
         }
     }

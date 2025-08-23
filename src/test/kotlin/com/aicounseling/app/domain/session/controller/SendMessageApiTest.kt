@@ -126,11 +126,17 @@ class SendMessageApiTest
 
             // DB 확인
             val messages = messageRepository.findBySessionIdOrderByCreatedAtAsc(session.id)
+            println("=== DB 메시지 확인 ===")
+            println("메시지 개수: ${messages.size}")
+            messages.forEachIndexed { index, msg ->
+                println("메시지[$index]: ${msg.senderType} - ${msg.content}")
+            }
+
             assert(messages.size == 2)
             assert(messages[0].content == userMessageContent)
             assert(messages[0].senderType == SenderType.USER)
             assert(messages[1].senderType == SenderType.AI)
-            assert(messages[1].content.isNotEmpty()) // AI 응답이 비어있지 않은지 확인
+            assert(messages[1].content.isNotEmpty()) { "AI 응답이 비어있습니다: '${messages[1].content}'" }
         }
 
         @Test

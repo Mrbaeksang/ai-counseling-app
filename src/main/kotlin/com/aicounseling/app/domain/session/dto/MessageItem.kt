@@ -1,5 +1,7 @@
 package com.aicounseling.app.domain.session.dto
 
+import com.aicounseling.app.domain.session.entity.Message
+
 /**
  * 메시지 아이템 DTO
  *
@@ -11,4 +13,13 @@ data class MessageItem(
     val content: String,
     // "USER" or "AI"
     val senderType: String,
-)
+) {
+    companion object {
+        fun from(message: Message): MessageItem {
+            return MessageItem(
+                content = message.content,
+                senderType = message.senderType.name,
+            )
+        }
+    }
+}

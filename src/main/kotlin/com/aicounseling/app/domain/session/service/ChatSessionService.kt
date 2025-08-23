@@ -17,6 +17,8 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,35 +39,21 @@ class ChatSessionService(
     }
 
     /**
-     * 사용자의 상담 세션 목록 조회
+     * 사용자의 상담 세션 목록 조회 (N+1 문제 해결)
      * @param userId 조회할 사용자 ID
      * @param bookmarked 북마크 필터 (null이면 전체, true면 북마크만)
      * @param pageable 페이징 정보
-     * @return 세션 목록 응답 DTO
+     * @return Page<SessionListResponse> 페이징 정보를 포함한 세션 목록
      */
     @Transactional(readOnly = true)
     fun getUserSessions(
         userId: Long,
         bookmarked: Boolean?,
         pageable: Pageable,
-    ): List<SessionListResponse> {
-        val sessions =
-            if (bookmarked == true) {
-                sessionRepository.findByUserIdAndIsBookmarked(userId, true, pageable)
-            } else {
-                sessionRepository.findByUserId(userId, pageable)
-            }
-
-        return sessions.content.map { session ->
-            val counselor = counselorService.findById(session.counselorId)
-            SessionListResponse(
-                sessionId = session.id,
-                title = session.title ?: AppConstants.Session.DEFAULT_SESSION_TITLE,
-                counselorName = counselor.name,
-                lastMessageAt = session.lastMessageAt ?: session.createdAt,
-                isBookmarked = session.isBookmarked,
-            )
-        }
+    ): Page<SessionListResponse> {
+        // Custom Repository 메서드를 사용하여 N+1 문제 해결
+        // 한 번의 쿼리로 Session과 Counselor 정보를 함께 조회
+        return sessionRepository.findSessionsWithCounselor(userId, bookmarked, pageable)
     }
 
     /**
@@ -209,7 +197,7 @@ class ChatSessionService(
      * @param sessionId 조회할 세션 ID
      * @param userId 사용자 ID (권한 확인용)
      * @param pageable 페이징 정보
-     * @return 메시지 DTO 목록
+     * @return Page<MessageItem> 페이징 정보를 포함한 메시지 목록
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
     @Transactional(readOnly = true)
@@ -217,17 +205,20 @@ class ChatSessionService(
         sessionId: Long,
         userId: Long,
         pageable: Pageable,
-    ): List<MessageItem> {
+    ): Page<MessageItem> {
         getSession(sessionId, userId) // 권한 확인용
 
         val messages = messageRepository.findBySessionId(sessionId, pageable)
 
-        return messages.content.map { message ->
-            MessageItem(
-                content = message.content,
-                senderType = message.senderType.name,
-            )
-        }
+        val content =
+            messages.content.map { message ->
+                MessageItem(
+                    content = message.content,
+                    senderType = message.senderType.name,
+                )
+            }
+
+        return PageImpl(content, messages.pageable, messages.totalElements)
     }
 
     /**

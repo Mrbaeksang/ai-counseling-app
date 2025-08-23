@@ -33,6 +33,10 @@ object PageUtils {
     fun <T> createEmptyPage(pageable: Pageable): Page<T> {
         return Page.empty(pageable)
     }
+
+    fun <T> toPageInfo(page: Page<T>): PageInfo {
+        return PageInfo.from(page)
+    }
 }
 
 data class PageInfo(

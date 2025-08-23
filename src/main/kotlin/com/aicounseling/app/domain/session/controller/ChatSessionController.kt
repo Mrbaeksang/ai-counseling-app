@@ -10,12 +10,13 @@ import com.aicounseling.app.domain.session.dto.SessionListResponse
 import com.aicounseling.app.domain.session.dto.UpdateSessionTitleRequest
 import com.aicounseling.app.domain.session.service.ChatSessionService
 import com.aicounseling.app.global.constants.AppConstants
+import com.aicounseling.app.global.pagination.PageUtils
+import com.aicounseling.app.global.pagination.PagedResponse
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -56,18 +57,28 @@ class ChatSessionController(
         @RequestParam(required = false) bookmarked: Boolean?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<SessionListResponse>> {
+    ): RsData<PagedResponse<SessionListResponse>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
-        val sessions = sessionService.getUserSessions(userId, bookmarked, pageable)
+        // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
+        val pageable =
+            PageUtils.createPageRequest(
+                page = page,
+                size = size,
+                sort = Sort.by(Sort.Direction.DESC, "lastMessageAt"),
+            )
+        // N+1 문제가 이미 해결된 getUserSessions 호출
+        val sessionPage = sessionService.getUserSessions(userId, bookmarked, pageable)
+
+        // PagedResponse로 변환 (이미 SessionListResponse로 매핑됨)
+        val response = PagedResponse.from(sessionPage)
 
         return RsData.of(
             "S-1",
             if (bookmarked == true) "북마크된 세션 조회 성공" else "세션 목록 조회 성공",
-            sessions,
+            response,
         )
     }
 
@@ -122,18 +133,28 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): RsData<List<MessageItem>> {
+    ): RsData<PagedResponse<MessageItem>> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"))
-        val messages = sessionService.getSessionMessages(sessionId, userId, pageable)
+        // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
+        val pageable =
+            PageUtils.createPageRequest(
+                page = page,
+                size = size,
+                sort = Sort.by(Sort.Direction.ASC, "createdAt"),
+            )
+        // 수정된 getSessionMessages 호출 (이제 Page<MessageItem> 반환)
+        val messagePage = sessionService.getSessionMessages(sessionId, userId, pageable)
+
+        // PagedResponse로 변환 (이미 MessageItem으로 매핑됨)
+        val response = PagedResponse.from(messagePage)
 
         return RsData.of(
             "S-1",
             "메시지 조회 성공",
-            messages,
+            response,
         )
     }
 

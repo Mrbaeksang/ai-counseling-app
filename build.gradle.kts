@@ -35,7 +35,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-actuator") // 헬스체크용
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // WebFlux (OpenRouter API 호출용)
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -51,8 +51,10 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
-    // JDSL (Type-safe JPQL)
-    implementation("com.linecorp.kotlin-jdsl:spring-data-kotlin-jdsl-starter-jakarta:2.2.1.RELEASE")
+    // JDSL (Type-safe JPQL) - 3.5.5 버전으로 업그레이드
+    implementation("com.linecorp.kotlin-jdsl:jpql-dsl:3.5.5")
+    implementation("com.linecorp.kotlin-jdsl:jpql-render:3.5.5")
+    implementation("com.linecorp.kotlin-jdsl:spring-data-jpa-support:3.5.5")
 
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
