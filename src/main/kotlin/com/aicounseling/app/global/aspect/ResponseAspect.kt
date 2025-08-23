@@ -17,6 +17,8 @@ import org.springframework.web.context.request.ServletRequestAttributes
 class ResponseAspect {
     companion object {
         private const val DEFAULT_STATUS_CODE = 200
+        private const val MIN_HTTP_STATUS_CODE = 100
+        private const val MAX_HTTP_STATUS_CODE = 599
 
         private val STATUS_CODE_MAP =
             mapOf(
@@ -54,11 +56,27 @@ class ResponseAspect {
     }
 
     private fun getHttpStatusFromCode(code: String): HttpStatus {
-        // Handle both "F-400" and "400" formats
-        val cleanCode = code.removePrefix("F-").removePrefix("S-")
-        return STATUS_CODE_MAP[cleanCode] ?: run {
-            val numericCode = cleanCode.toIntOrNull() ?: DEFAULT_STATUS_CODE
-            HttpStatus.valueOf(numericCode)
+        // S-로 시작하는 성공 코드는 모두 200 OK
+        if (code.startsWith("S-")) {
+            return HttpStatus.OK
+        }
+
+        // F-로 시작하는 실패 코드 처리
+        if (code.startsWith("F-")) {
+            val statusCode = code.removePrefix("F-")
+            return STATUS_CODE_MAP[statusCode] ?: HttpStatus.INTERNAL_SERVER_ERROR
+        }
+
+        // 숫자만 있는 경우 직접 매핑
+        return STATUS_CODE_MAP[code] ?: run {
+            val numericCode = code.toIntOrNull() ?: DEFAULT_STATUS_CODE
+            // HTTP 상태 코드 유효 범위 체크
+            if (numericCode in MIN_HTTP_STATUS_CODE..MAX_HTTP_STATUS_CODE) {
+                HttpStatus.valueOf(numericCode)
+            } else {
+                // 범위를 벗어난 경우 기본값 반환
+                HttpStatus.OK
+            }
         }
     }
 
