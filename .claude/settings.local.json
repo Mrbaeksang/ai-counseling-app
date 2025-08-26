@@ -38,7 +38,10 @@
       "mcp__serena__read_file",
       "mcp__serena__list_dir",
       "mcp__serena__search_for_pattern",
-      "mcp__serena__find_symbol"
+      "mcp__serena__find_symbol",
+      "mcp__jetbrains__list_directory_tree_in_folder",
+      "Read(/C:\\Users\\qortk\\IdeaProjects\\ai_counseling_app\\android\\app/**)",
+      "Read(/C:\\Users\\qortk\\IdeaProjects\\ai_counseling_app\\android/**)"
     ],
     "deny": [],
     "ask": []

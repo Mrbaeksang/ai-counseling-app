@@ -1,6 +1,6 @@
-package com.aicounseling.app.domain.auth.service
+package com.aicounseling.app.global.auth.service
 
-import com.aicounseling.app.domain.auth.dto.OAuthUserInfo
+import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import com.aicounseling.app.global.exception.UnauthorizedException
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient

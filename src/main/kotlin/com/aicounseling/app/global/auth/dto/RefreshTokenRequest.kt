@@ -1,4 +1,4 @@
-package com.aicounseling.app.domain.auth.dto
+package com.aicounseling.app.global.auth.dto
 
 import jakarta.validation.constraints.NotBlank
 

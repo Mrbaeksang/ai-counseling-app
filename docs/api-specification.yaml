@@ -96,7 +96,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserProfile'
+                $ref: '#/components/schemas/UserProfileResponse'
 
   /users/nickname:
     patch:
@@ -109,20 +109,26 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [nickname]
-              properties:
-                nickname:
-                  type: string
-                  minLength: 2
-                  maxLength: 20
+              $ref: '#/components/schemas/NicknameUpdateRequest'
       responses:
         200:
           description: 변경 성공
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserProfile'
+                $ref: '#/components/schemas/UserProfileResponse'
+
+  /users/me:
+    delete:
+      tags: [users]
+      summary: 회원 탈퇴
+      security:
+        - bearerAuth: []
+      responses:
+        204:
+          description: 탈퇴 완료
+        400:
+          description: 진행 중인 세션이 있음
 
   # ===== 상담사 =====
   /counselors:
@@ -521,36 +527,58 @@ components:
     # ===== 인증 =====
     AuthResponse:
       type: object
+      description: OAuth 로그인/토큰 갱신 응답
       properties:
         accessToken:
           type: string
+          description: JWT 액세스 토큰
         refreshToken:
           type: string
-        expiresIn:
+          description: 리프레시 토큰
+        userId:
           type: integer
-        user:
-          $ref: '#/components/schemas/UserProfile'
-
-    # ===== 사용자 =====
-    UserProfile:
-      type: object
-      properties:
-        id:
-          type: integer
+          description: 사용자 ID
         email:
           type: string
+          description: 사용자 이메일
         nickname:
           type: string
+          description: 사용자 닉네임
+
+    # ===== 사용자 =====
+    UserProfileResponse:
+      type: object
+      description: 사용자 프로필 정보 (OAuth 전용)
+      properties:
+        email:
+          type: string
+          description: 사용자 이메일
+        nickname:
+          type: string
+          description: 사용자 닉네임
         profileImageUrl:
           type: string
+          nullable: true
+          description: OAuth 프로필 이미지 URL
         authProvider:
           type: string
           enum: [GOOGLE, KAKAO, NAVER]
-        isActive:
-          type: boolean
-        createdAt:
+          description: OAuth 제공자
+        memberSince:
           type: string
-          format: date-time
+          format: date
+          description: 가입일
+
+    NicknameUpdateRequest:
+      type: object
+      description: 닉네임 변경 요청
+      required: [nickname]
+      properties:
+        nickname:
+          type: string
+          minLength: 2
+          maxLength: 20
+          description: 변경할 닉네임
 
     # ===== 상담사 =====
     CounselorListItem:

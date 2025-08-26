@@ -1,6 +1,6 @@
-package com.aicounseling.app.domain.auth.service
+package com.aicounseling.app.global.auth.service
 
-import com.aicounseling.app.domain.auth.dto.OAuthUserInfo
+import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import reactor.core.publisher.Mono
 
 interface OAuthTokenVerifier {

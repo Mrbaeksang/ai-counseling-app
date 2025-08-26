@@ -1,12 +1,13 @@
 package com.aicounseling.app.domain.user.controller
 
 import com.aicounseling.app.domain.user.dto.NicknameUpdateRequest
-import com.aicounseling.app.domain.user.dto.UserResponse
+import com.aicounseling.app.domain.user.dto.UserProfileResponse
 import com.aicounseling.app.domain.user.service.UserService
 import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -19,30 +20,38 @@ class UserController(
     private val userService: UserService,
     private val rq: Rq,
 ) {
+    /**
+     * GET /users/me - 내 정보 조회
+     * OAuth 기반 사용자 프로필 반환
+     */
     @GetMapping("/me")
-    fun getMyInfo(): RsData<UserResponse> {
+    fun getMyProfile(): RsData<UserProfileResponse> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
 
-        val user = userService.getUser(userId)
+        val profile = userService.getUserProfile(userId)
         return RsData.of(
             AppConstants.Response.SUCCESS_CODE,
-            "사용자 정보 조회 성공",
-            UserResponse.from(user),
+            "프로필 조회 성공",
+            profile,
         )
     }
 
+    /**
+     * PATCH /users/nickname - 닉네임 변경
+     * Validation은 @Valid로 자동 처리
+     */
     @PatchMapping("/nickname")
     fun updateNickname(
         @Valid @RequestBody request: NicknameUpdateRequest,
-    ): RsData<UserResponse> {
+    ): RsData<UserProfileResponse> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
 
-        val updatedUser =
-            userService.changeNickname(
+        val updatedProfile =
+            userService.updateNickname(
                 userId,
                 request.nickname,
             )
@@ -50,7 +59,27 @@ class UserController(
         return RsData.of(
             AppConstants.Response.SUCCESS_CODE,
             "닉네임 변경 성공",
-            UserResponse.from(updatedUser),
+            updatedProfile,
+        )
+    }
+
+    /**
+     * DELETE /users/me - 회원 탈퇴
+     * CASCADE로 연관 데이터 자동 삭제
+     * OAuth라 비밀번호 확인 불필요
+     */
+    @DeleteMapping("/me")
+    fun deleteAccount(): RsData<Nothing> {
+        val userId =
+            rq.currentUserId
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
+
+        userService.deleteUser(userId)
+
+        return RsData.of(
+            AppConstants.Response.SUCCESS_CODE,
+            "회원 탈퇴가 완료되었습니다",
+            null,
         )
     }
 }

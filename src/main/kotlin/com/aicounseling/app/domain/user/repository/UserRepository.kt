@@ -7,12 +7,15 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface UserRepository : JpaRepository<User, Long> {
-    fun findByEmail(email: String): User?
-
-    fun existsByEmail(email: String): Boolean
-
-    fun findByAuthProviderAndProviderId(
-        authProvider: AuthProvider,
+    /**
+     * OAuth 로그인 시 기존 사용자 찾기
+     *
+     * @param providerId OAuth 제공자가 주는 고유 ID
+     * @param authProvider OAuth 제공자 (GOOGLE/KAKAO/NAVER)
+     * @return 기존 사용자 또는 null
+     */
+    fun findByProviderIdAndAuthProvider(
         providerId: String,
+        authProvider: AuthProvider,
     ): User?
 }
