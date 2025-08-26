@@ -7,7 +7,6 @@ import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -72,15 +71,17 @@ class UserController(
      * @return 204 No Content (성공 시)
      */
     @DeleteMapping("/me")
-    fun deleteAccount(): ResponseEntity<RsData<Nothing>> {
+    fun deleteAccount(): RsData<Nothing> {
         val userId =
             rq.currentUserId
-                ?: return ResponseEntity.ok(
-                    RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null),
-                )
+                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
 
         userService.deleteUser(userId)
 
-        return ResponseEntity.noContent().build()
+        return RsData.of(
+            "S-204",
+            "회원 탈퇴가 완료되었습니다",
+            null,
+        )
     }
 }

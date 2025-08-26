@@ -56,8 +56,14 @@ class ResponseAspect {
     }
 
     private fun getHttpStatusFromCode(code: String): HttpStatus {
-        // S-로 시작하는 성공 코드는 모두 200 OK
+        // S-로 시작하는 성공 코드 처리
         if (code.startsWith("S-")) {
+            val statusCode = code.removePrefix("S-")
+            // S-204는 특별히 NO_CONTENT로 처리
+            if (statusCode == "204") {
+                return HttpStatus.NO_CONTENT
+            }
+            // 그 외 S- 코드는 200 OK
             return HttpStatus.OK
         }
 
