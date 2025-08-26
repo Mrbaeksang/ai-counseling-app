@@ -1,9 +1,9 @@
-package com.aicounseling.app.domain.auth.controller
+package com.aicounseling.app.global.auth.controller
 
-import com.aicounseling.app.domain.auth.dto.AuthResponse
-import com.aicounseling.app.domain.auth.dto.OAuthLoginRequest
-import com.aicounseling.app.domain.auth.dto.RefreshTokenRequest
-import com.aicounseling.app.domain.auth.service.AuthService
+import com.aicounseling.app.global.auth.dto.AuthResponse
+import com.aicounseling.app.global.auth.dto.OAuthLoginRequest
+import com.aicounseling.app.global.auth.dto.RefreshTokenRequest
+import com.aicounseling.app.global.auth.service.AuthService
 import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid

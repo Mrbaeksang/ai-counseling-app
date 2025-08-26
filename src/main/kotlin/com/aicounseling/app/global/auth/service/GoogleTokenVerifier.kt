@@ -1,6 +1,6 @@
-package com.aicounseling.app.domain.auth.service
+package com.aicounseling.app.global.auth.service
 
-import com.aicounseling.app.domain.auth.dto.OAuthUserInfo
+import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import com.aicounseling.app.global.exception.UnauthorizedException
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.stereotype.Service
@@ -25,6 +25,7 @@ class GoogleTokenVerifier(
                     email = info.email,
                     name = info.name,
                     provider = "GOOGLE",
+                    picture = info.picture,
                 )
             }
             .onErrorMap { UnauthorizedException("유효하지 않은 Google 토큰입니다") }
@@ -36,5 +37,6 @@ class GoogleTokenVerifier(
         @JsonProperty("email_verified")
         val emailVerified: Boolean?,
         val name: String?,
+        val picture: String? = null,
     )
 }

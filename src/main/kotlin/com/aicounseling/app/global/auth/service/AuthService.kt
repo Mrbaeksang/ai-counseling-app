@@ -1,21 +1,21 @@
-package com.aicounseling.app.domain.auth.service
+package com.aicounseling.app.global.auth.service
 
-import com.aicounseling.app.domain.auth.dto.AuthResponse
-import com.aicounseling.app.domain.auth.dto.OAuthUserInfo
 import com.aicounseling.app.domain.user.entity.User
-import com.aicounseling.app.domain.user.repository.UserRepository
+import com.aicounseling.app.domain.user.service.UserService
+import com.aicounseling.app.global.auth.dto.AuthResponse
+import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import com.aicounseling.app.global.exception.UnauthorizedException
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Mono
-import java.time.LocalDateTime
 
 @Service
 @Transactional
 class AuthService(
-    private val userRepository: UserRepository,
+    // UserRepository 대신 UserService 주입
+    private val userService: UserService,
     private val jwtTokenProvider: JwtTokenProvider,
     private val googleTokenVerifier: GoogleTokenVerifier,
     private val kakaoTokenVerifier: KakaoTokenVerifier,
@@ -41,15 +41,22 @@ class AuthService(
             }
     }
 
+    @Suppress("SwallowedException")
     fun refreshToken(refreshToken: String): AuthResponse {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw UnauthorizedException("유효하지 않은 리프레시 토큰입니다")
         }
 
         val userId = jwtTokenProvider.getUserIdFromToken(refreshToken)
+
+        // UserService를 통해 사용자 조회
         val user =
-            userRepository.findById(userId)
-                .orElseThrow { UnauthorizedException("사용자를 찾을 수 없습니다") }
+            try {
+                userService.getUser(userId)
+            } catch (e: NoSuchElementException) {
+                // 원본 예외 메시지를 포함하여 UnauthorizedException으로 변환
+                throw UnauthorizedException("사용자를 찾을 수 없습니다: ${e.message}")
+            }
 
         return createAuthResponse(user)
     }
@@ -58,23 +65,14 @@ class AuthService(
         oauthInfo: OAuthUserInfo,
         authProvider: AuthProvider,
     ): User {
-        val existingUser = userRepository.findByAuthProviderAndProviderId(authProvider, oauthInfo.providerId)
-
-        return if (existingUser != null) {
-            existingUser.lastLoginAt = LocalDateTime.now()
-            userRepository.save(existingUser)
-        } else {
-            val newUser =
-                User(
-                    email = oauthInfo.email,
-                    nickname = oauthInfo.name ?: oauthInfo.email.substringBefore("@"),
-                    authProvider = authProvider,
-                    providerId = oauthInfo.providerId,
-                    isActive = true,
-                    lastLoginAt = LocalDateTime.now(),
-                )
-            userRepository.save(newUser)
-        }
+        // UserService로 위임 (도메인 로직은 Service에서 처리)
+        return userService.findOrCreateOAuthUser(
+            provider = authProvider,
+            providerId = oauthInfo.providerId,
+            email = oauthInfo.email,
+            nickname = oauthInfo.name ?: oauthInfo.email.substringBefore("@"),
+            profileImageUrl = oauthInfo.picture,
+        )
     }
 
     private fun createAuthResponse(user: User): AuthResponse {

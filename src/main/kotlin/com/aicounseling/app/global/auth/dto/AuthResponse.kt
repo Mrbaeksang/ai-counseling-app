@@ -1,4 +1,4 @@
-package com.aicounseling.app.domain.auth.dto
+package com.aicounseling.app.global.auth.dto
 
 data class AuthResponse(
     val accessToken: String,

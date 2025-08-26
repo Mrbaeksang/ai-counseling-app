@@ -33,6 +33,17 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     
+# OAuth2 설정
+oauth2:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:861362260494-2gn00elrv3doj3hm8il79qkghf0jvo4g.apps.googleusercontent.com}
+    # Android 앱은 client-secret 필요 없음
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID:}
+  naver:
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET:this-is-a-very-long-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2024}
