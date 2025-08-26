@@ -71,11 +71,7 @@ class UserService(
             "닉네임은 ${minLength}자 이상 ${maxLength}자 이하여야 합니다"
         }
 
-        val user =
-            userRepository.findById(userId).orElseThrow {
-                NoSuchElementException("${AppConstants.ErrorMessages.USER_NOT_FOUND}: $userId")
-            }
-
+        val user = getUser(userId)
         user.nickname = trimmedNickname
         val updatedUser = userRepository.save(user)
 

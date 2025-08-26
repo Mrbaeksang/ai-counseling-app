@@ -7,6 +7,7 @@ import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.rq.Rq
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -67,19 +68,19 @@ class UserController(
      * DELETE /users/me - 회원 탈퇴
      * CASCADE로 연관 데이터 자동 삭제
      * OAuth라 비밀번호 확인 불필요
+     *
+     * @return 204 No Content (성공 시)
      */
     @DeleteMapping("/me")
-    fun deleteAccount(): RsData<Nothing> {
+    fun deleteAccount(): ResponseEntity<RsData<Nothing>> {
         val userId =
             rq.currentUserId
-                ?: return RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null)
+                ?: return ResponseEntity.ok(
+                    RsData.of(AppConstants.Response.UNAUTHORIZED_CODE, "로그인이 필요합니다", null),
+                )
 
         userService.deleteUser(userId)
 
-        return RsData.of(
-            AppConstants.Response.SUCCESS_CODE,
-            "회원 탈퇴가 완료되었습니다",
-            null,
-        )
+        return ResponseEntity.noContent().build()
     }
 }
