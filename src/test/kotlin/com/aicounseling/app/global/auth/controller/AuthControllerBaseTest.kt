@@ -2,17 +2,16 @@ package com.aicounseling.app.global.auth.controller
 
 import com.aicounseling.app.domain.user.entity.User
 import com.aicounseling.app.domain.user.repository.UserRepository
+import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import com.aicounseling.app.global.auth.service.GoogleTokenVerifier
 import com.aicounseling.app.global.auth.service.KakaoTokenVerifier
 import com.aicounseling.app.global.auth.service.NaverTokenVerifier
-import com.aicounseling.app.global.auth.dto.OAuthUserInfo
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.github.cdimascio.dotenv.dotenv
 import io.mockk.coEvery
-import io.mockk.every
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -63,7 +62,7 @@ abstract class AuthControllerBaseTest(
                     ?: dotenv["JWT_SECRET"]
                     ?: "test-jwt-secret-key-for-jwt-auth-512-bits-long-2024-with-extra-characters-for-security"
             }
-            
+
             // OAuth 설정
             registry.add("oauth2.google.client-id") { "test-google-client-id" }
             registry.add("oauth2.kakao.client-id") { "test-kakao-client-id" }
@@ -139,16 +138,14 @@ abstract class AuthControllerBaseTest(
     }
 
     /**
-     * 테스트용 유효하지 않은 토큰 생성
+     * 테스트용 유효하지 않은 토큰
      */
-    protected fun createInvalidToken(): String = "invalid.jwt.token"
+    protected val invalidToken = "invalid.jwt.token"
 
     /**
-     * 테스트용 만료된 토큰 생성 (실제 구현은 JwtTokenProvider 수정 필요)
+     * 테스트용 만료된 토큰
+     * 실제로는 JwtTokenProvider에 만료 시간을 설정할 수 있는 메서드가 필요
+     * 여기서는 간단히 invalid token 사용
      */
-    protected fun createExpiredToken(): String {
-        // 실제로는 JwtTokenProvider에 만료 시간을 설정할 수 있는 메서드가 필요
-        // 여기서는 간단히 invalid token 반환
-        return "expired.jwt.token"
-    }
+    protected val expiredToken = "expired.jwt.token"
 }

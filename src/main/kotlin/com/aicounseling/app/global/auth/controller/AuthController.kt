@@ -36,13 +36,19 @@ class AuthController(
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     e.message ?: "인증 실패",
-                    null
+                    null,
                 )
-            } catch (e: RuntimeException) {
+            } catch (e: IllegalArgumentException) {
+                RsData.of(
+                    AppConstants.Response.BAD_REQUEST_CODE,
+                    "잘못된 요청: ${e.message}",
+                    null,
+                )
+            } catch (e: IllegalStateException) {
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     "구글 로그인 실패: ${e.message}",
-                    null
+                    null,
                 )
             }
         }
@@ -63,13 +69,19 @@ class AuthController(
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     e.message ?: "인증 실패",
-                    null
+                    null,
                 )
-            } catch (e: RuntimeException) {
+            } catch (e: IllegalArgumentException) {
+                RsData.of(
+                    AppConstants.Response.BAD_REQUEST_CODE,
+                    "잘못된 요청: ${e.message}",
+                    null,
+                )
+            } catch (e: IllegalStateException) {
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     "카카오 로그인 실패: ${e.message}",
-                    null
+                    null,
                 )
             }
         }
@@ -90,13 +102,19 @@ class AuthController(
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     e.message ?: "인증 실패",
-                    null
+                    null,
                 )
-            } catch (e: RuntimeException) {
+            } catch (e: IllegalArgumentException) {
+                RsData.of(
+                    AppConstants.Response.BAD_REQUEST_CODE,
+                    "잘못된 요청: ${e.message}",
+                    null,
+                )
+            } catch (e: IllegalStateException) {
                 RsData.of(
                     AppConstants.Response.UNAUTHORIZED_CODE,
                     "네이버 로그인 실패: ${e.message}",
-                    null
+                    null,
                 )
             }
         }
@@ -116,13 +134,19 @@ class AuthController(
             RsData.of(
                 AppConstants.Response.UNAUTHORIZED_CODE,
                 e.message ?: "인증 실패",
-                null
+                null,
             )
-        } catch (e: RuntimeException) {
+        } catch (e: IllegalArgumentException) {
+            RsData.of(
+                AppConstants.Response.BAD_REQUEST_CODE,
+                "잘못된 토큰 형식: ${e.message}",
+                null,
+            )
+        } catch (e: IllegalStateException) {
             RsData.of(
                 AppConstants.Response.UNAUTHORIZED_CODE,
                 "토큰 갱신 실패: ${e.message}",
-                null
+                null,
             )
         }
     }

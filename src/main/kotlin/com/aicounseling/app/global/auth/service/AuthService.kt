@@ -71,11 +71,12 @@ class AuthService(
         }
 
         // Kakao/Naver는 이메일이 없을 수 있음 - providerId 기반 이메일 생성
-        val email = if (oauthInfo.email.isBlank()) {
-            "${oauthInfo.providerId}@${authProvider.name.lowercase()}.local"
-        } else {
-            oauthInfo.email
-        }
+        val email =
+            if (oauthInfo.email.isBlank()) {
+                "${oauthInfo.providerId}@${authProvider.name.lowercase()}.local"
+            } else {
+                oauthInfo.email
+            }
 
         // UserService로 위임 (도메인 로직은 Service에서 처리)
         return userService.findOrCreateOAuthUser(

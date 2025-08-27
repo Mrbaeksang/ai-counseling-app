@@ -132,11 +132,12 @@ class UserService(
         // 신규 사용자 생성 (Zero Friction - 온보딩 없이 바로 가입)
         // OAuth 이름 그대로 사용, 단 최대 길이 제한 적용
         val maxLength = AppConstants.Validation.MAX_NICKNAME_LENGTH
-        val finalNickname = if (nickname.length > maxLength) {
-            nickname.substring(0, maxLength)
-        } else {
-            nickname
-        }
+        val finalNickname =
+            if (nickname.length > maxLength) {
+                nickname.substring(0, maxLength)
+            } else {
+                nickname
+            }
 
         val newUser =
             User(
