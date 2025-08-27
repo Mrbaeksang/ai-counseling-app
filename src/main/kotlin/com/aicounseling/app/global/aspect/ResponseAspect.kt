@@ -39,7 +39,8 @@ class ResponseAspect {
 
     @Around(
         "@within(org.springframework.web.bind.annotation.RestController) && " +
-            "execution(* com.aicounseling.app.domain..*Controller.*(..))",
+            "(execution(* com.aicounseling.app.domain..*Controller.*(..)) || " +
+            "execution(* com.aicounseling.app.global.auth.controller.*Controller.*(..)))",
     )
     fun handleResponse(joinPoint: ProceedingJoinPoint): Any? {
         val result = joinPoint.proceed()

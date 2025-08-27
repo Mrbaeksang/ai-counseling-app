@@ -65,12 +65,25 @@ class AuthService(
         oauthInfo: OAuthUserInfo,
         authProvider: AuthProvider,
     ): User {
+        // Google은 이메일이 필수
+        if (authProvider == AuthProvider.GOOGLE && oauthInfo.email.isBlank()) {
+            throw UnauthorizedException("구글 계정에서 이메일을 가져올 수 없습니다")
+        }
+
+        // Kakao/Naver는 이메일이 없을 수 있음 - providerId 기반 이메일 생성
+        val email =
+            if (oauthInfo.email.isBlank()) {
+                "${oauthInfo.providerId}@${authProvider.name.lowercase()}.local"
+            } else {
+                oauthInfo.email
+            }
+
         // UserService로 위임 (도메인 로직은 Service에서 처리)
         return userService.findOrCreateOAuthUser(
             provider = authProvider,
             providerId = oauthInfo.providerId,
-            email = oauthInfo.email,
-            nickname = oauthInfo.name ?: oauthInfo.email.substringBefore("@"),
+            email = email,
+            nickname = oauthInfo.name ?: email.substringBefore("@"),
             profileImageUrl = oauthInfo.picture,
         )
     }
