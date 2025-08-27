@@ -5,6 +5,7 @@ import com.aicounseling.app.global.auth.dto.OAuthLoginRequest
 import com.aicounseling.app.global.auth.dto.RefreshTokenRequest
 import com.aicounseling.app.global.auth.service.AuthService
 import com.aicounseling.app.global.constants.AppConstants
+import com.aicounseling.app.global.exception.UnauthorizedException
 import com.aicounseling.app.global.rsData.RsData
 import jakarta.validation.Valid
 import kotlinx.coroutines.reactor.awaitSingle
@@ -24,12 +25,26 @@ class AuthController(
         @Valid @RequestBody request: OAuthLoginRequest,
     ): RsData<AuthResponse> =
         runBlocking {
-            val response = authService.loginWithOAuth(request.token, "GOOGLE").awaitSingle()
-            RsData.of(
-                AppConstants.Response.SUCCESS_CODE,
-                "구글 로그인 성공",
-                response,
-            )
+            try {
+                val response = authService.loginWithOAuth(request.token, "GOOGLE").awaitSingle()
+                RsData.of(
+                    AppConstants.Response.SUCCESS_CODE,
+                    "구글 로그인 성공",
+                    response,
+                )
+            } catch (e: UnauthorizedException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    e.message ?: "인증 실패",
+                    null
+                )
+            } catch (e: RuntimeException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    "구글 로그인 실패: ${e.message}",
+                    null
+                )
+            }
         }
 
     @PostMapping("/login/kakao")
@@ -37,12 +52,26 @@ class AuthController(
         @Valid @RequestBody request: OAuthLoginRequest,
     ): RsData<AuthResponse> =
         runBlocking {
-            val response = authService.loginWithOAuth(request.token, "KAKAO").awaitSingle()
-            RsData.of(
-                AppConstants.Response.SUCCESS_CODE,
-                "카카오 로그인 성공",
-                response,
-            )
+            try {
+                val response = authService.loginWithOAuth(request.token, "KAKAO").awaitSingle()
+                RsData.of(
+                    AppConstants.Response.SUCCESS_CODE,
+                    "카카오 로그인 성공",
+                    response,
+                )
+            } catch (e: UnauthorizedException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    e.message ?: "인증 실패",
+                    null
+                )
+            } catch (e: RuntimeException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    "카카오 로그인 실패: ${e.message}",
+                    null
+                )
+            }
         }
 
     @PostMapping("/login/naver")
@@ -50,23 +79,51 @@ class AuthController(
         @Valid @RequestBody request: OAuthLoginRequest,
     ): RsData<AuthResponse> =
         runBlocking {
-            val response = authService.loginWithOAuth(request.token, "NAVER").awaitSingle()
-            RsData.of(
-                AppConstants.Response.SUCCESS_CODE,
-                "네이버 로그인 성공",
-                response,
-            )
+            try {
+                val response = authService.loginWithOAuth(request.token, "NAVER").awaitSingle()
+                RsData.of(
+                    AppConstants.Response.SUCCESS_CODE,
+                    "네이버 로그인 성공",
+                    response,
+                )
+            } catch (e: UnauthorizedException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    e.message ?: "인증 실패",
+                    null
+                )
+            } catch (e: RuntimeException) {
+                RsData.of(
+                    AppConstants.Response.UNAUTHORIZED_CODE,
+                    "네이버 로그인 실패: ${e.message}",
+                    null
+                )
+            }
         }
 
     @PostMapping("/refresh")
     fun refreshToken(
         @Valid @RequestBody request: RefreshTokenRequest,
     ): RsData<AuthResponse> {
-        val response = authService.refreshToken(request.refreshToken)
-        return RsData.of(
-            AppConstants.Response.SUCCESS_CODE,
-            "토큰 갱신 성공",
-            response,
-        )
+        return try {
+            val response = authService.refreshToken(request.refreshToken)
+            RsData.of(
+                AppConstants.Response.SUCCESS_CODE,
+                "토큰 갱신 성공",
+                response,
+            )
+        } catch (e: UnauthorizedException) {
+            RsData.of(
+                AppConstants.Response.UNAUTHORIZED_CODE,
+                e.message ?: "인증 실패",
+                null
+            )
+        } catch (e: RuntimeException) {
+            RsData.of(
+                AppConstants.Response.UNAUTHORIZED_CODE,
+                "토큰 갱신 실패: ${e.message}",
+                null
+            )
+        }
     }
 }
