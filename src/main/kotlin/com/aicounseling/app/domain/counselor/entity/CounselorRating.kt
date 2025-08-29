@@ -9,13 +9,19 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 
 /**
  * CounselorRating 엔티티 - 상담사 평가
  * 세션 종료 후 사용자가 남기는 평가
  */
 @Entity
-@Table(name = "counselor_ratings")
+@Table(
+    name = "counselor_ratings",
+    uniqueConstraints = [
+        UniqueConstraint(columnNames = ["session_id"]),
+    ],
+)
 class CounselorRating(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -26,7 +32,6 @@ class CounselorRating(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     val session: ChatSession,
-    // 1~10 (별 0.5개 = 1, 별 5개 = 10)
     @Column(nullable = false)
     val rating: Int,
     @Column(columnDefinition = "TEXT")

@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AI Counseling App - A Spring Boot Kotlin application providing AI-powered philosophical counseling services through integration with OpenRouter API. The system allows users to have 1-on-1 conversations with AI counselors embodying historical philosophers and thinkers.
 
+## Recent Updates (2025-08-27)
+
+- **Auth Domain Migration**: Auth functionality moved from `domain/auth` to `global/auth` for better architectural separation
+- **AuthController Refactoring**: Eliminated duplicate code in OAuth login endpoints using `handleOAuthLogin` helper method
+- **OAuth Token Verifiers**: Implemented unified `OAuthTokenVerifier` interface with provider-specific implementations
+- **Test Organization**: Restructured auth tests with base test class and provider-specific test files
+- **Code Quality**: All 73 tests passing with 100% success rate
+
 ## Development Commands
 
 ### Build & Run
@@ -57,14 +65,18 @@ The application follows DDD principles with clear bounded contexts:
 
 - **domain/** - Core business logic organized by aggregate roots
   - Each domain module contains: controller, dto, entity, repository, service
-  - Key domains: user, counselor, session, auth
+  - Key domains: user, counselor, session
   
 - **global/** - Cross-cutting concerns and infrastructure
+  - auth: OAuth2 authentication system (controller, dto, service) - Migrated from domain
   - config: Spring configurations (Security, CORS, WebClient)
-  - security: JWT authentication and OAuth2 integration
+  - security: JWT authentication components (JwtTokenProvider, JwtAuthenticationFilter, AuthProvider)
   - openrouter: AI API integration layer
   - exception: Global error handling
   - rsData/rq: Response/Request wrapper patterns
+  - aspect: AOP components (ResponseAspect)
+  - pagination: Pagination utilities
+  - constants: Application-wide constants
 
 ### Global Components Detail
 
@@ -108,6 +120,25 @@ The application follows DDD principles with clear bounded contexts:
   - Usage: `val userId = rq.currentUserId ?: return RsData.of("F-401", "인증 필요", null)`
   - Note: Only handles authentication context, not response generation
 
+#### Authentication System (global/auth)
+- **AuthController** (`global/auth/controller/AuthController.kt`)
+  - OAuth2 login endpoints for Google/Kakao/Naver
+  - Refactored with `handleOAuthLogin` helper to eliminate duplicate code
+  - Token refresh endpoint
+  - Returns RsData<AuthResponse> with JWT tokens
+
+- **OAuth Token Verifiers** (`global/auth/service/`)
+  - Interface: `OAuthTokenVerifier` - Base interface for all providers
+  - Implementations: `GoogleTokenVerifier`, `KakaoTokenVerifier`, `NaverTokenVerifier`
+  - Each verifier validates OAuth tokens and returns `OAuthUserInfo`
+  - Uses WebClient for reactive API calls
+
+- **AuthService** (`global/auth/service/AuthService.kt`)
+  - Orchestrates OAuth login flow
+  - Creates or updates users based on OAuth provider info
+  - Generates JWT tokens (access & refresh)
+  - Handles provider-specific logic (e.g., Kakao email handling)
+
 #### Configuration Classes
 - **SecurityConfig** (`global/config/SecurityConfig.kt`)
   - JWT authentication filter configuration
@@ -115,6 +146,9 @@ The application follows DDD principles with clear bounded contexts:
   - CORS and CSRF policies
   - Public endpoints whitelist
 
+- **CorsConfig** (`global/config/CorsConfig.kt`)
+  - CORS configuration for cross-origin requests
+  - Allowed origins, methods, and headers configuration
 
 - **WebClientConfig** (`global/config/WebClientConfig.kt`)
   - WebClient bean configuration
@@ -155,11 +189,15 @@ The application follows DDD principles with clear bounded contexts:
 - Message context management for conversations
 - Counselor personality prompts in entity definitions
 
-### OAuth2 Providers
-- Google: `GoogleTokenVerifier`
-- Kakao: `KakaoTokenVerifier`  
-- Naver: `NaverTokenVerifier`
-- Token verification and user info extraction
+### OAuth2 Authentication System
+- **Auth Migration**: Auth domain migrated from `domain/auth` to `global/auth` for better architecture
+- **OAuth Providers**:
+  - Google: `GoogleTokenVerifier` - Validates Google OAuth tokens via Google API
+  - Kakao: `KakaoTokenVerifier` - Validates Kakao tokens, handles missing email cases
+  - Naver: `NaverTokenVerifier` - Validates Naver tokens via Naver API
+- **Unified Flow**: All providers implement `OAuthTokenVerifier` interface
+- **User Management**: Provider ID + Auth Provider combination uniquely identifies users
+- **Token Generation**: JWT tokens (access & refresh) generated after successful OAuth login
 
 ## Testing Approach
 
@@ -224,6 +262,13 @@ src/test/kotlin/.../controller/
 ├── GetUserSessionsApiTest.kt        # GET /sessions
 ├── StartSessionApiTest.kt           # POST /sessions
 └── SendMessageApiTest.kt            # POST /sessions/{id}/messages
+
+src/test/kotlin/.../global/auth/controller/
+├── AuthControllerBaseTest.kt        # Base test with OAuth mocks
+├── GoogleLoginApiTest.kt            # Google OAuth tests
+├── KakaoLoginApiTest.kt            # Kakao OAuth tests
+├── NaverLoginApiTest.kt            # Naver OAuth tests
+└── RefreshTokenApiTest.kt          # Token refresh tests
 ```
 
 ### Base Test Class Pattern

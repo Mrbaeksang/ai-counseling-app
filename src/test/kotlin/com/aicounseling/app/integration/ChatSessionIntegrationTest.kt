@@ -102,9 +102,9 @@ class ChatSessionIntegrationTest
                         name = "소크라테스",
                         title = "고대 그리스 철학자",
                         description = "너 자신을 알라",
-                        personalityMatrix = """{"wisdom": 10, "empathy": 8}""",
                         basePrompt = "당신은 소크라테스입니다. 질문을 통해 상대방이 스스로 답을 찾도록 도와주세요.",
-                        specialties = """["자기인식", "철학상담"]""",
+                        avatarUrl = "https://example.com/socrates.jpg",
+                        isActive = true,
                     ),
                 )
 

@@ -20,8 +20,6 @@ import jakarta.persistence.UniqueConstraint
 @Table(
     name = "favorite_counselors",
     uniqueConstraints = [
-        // 중복 방지: 같은 사용자가 같은 상담사를 2번 즐겨찾기 못하게
-        // user_id=1, counselor_id=5 조합이 테이블에 1개만 존재 가능
         UniqueConstraint(columnNames = ["user_id", "counselor_id"]),
     ],
 )

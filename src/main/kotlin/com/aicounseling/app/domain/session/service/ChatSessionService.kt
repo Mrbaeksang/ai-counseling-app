@@ -1,6 +1,6 @@
 package com.aicounseling.app.domain.session.service
 
-import com.aicounseling.app.domain.counselor.entity.CounselorRating
+import com.aicounseling.app.domain.counselor.dto.RateSessionRequest
 import com.aicounseling.app.domain.counselor.service.CounselorService
 import com.aicounseling.app.domain.session.dto.CreateSessionResponse
 import com.aicounseling.app.domain.session.dto.MessageItem
@@ -13,6 +13,7 @@ import com.aicounseling.app.domain.session.repository.ChatSessionRepository
 import com.aicounseling.app.domain.session.repository.MessageRepository
 import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.openrouter.OpenRouterService
+import com.aicounseling.app.global.rsData.RsData
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking
@@ -67,7 +68,9 @@ class ChatSessionService(
         counselorId: Long,
     ): CreateSessionResponse {
         // 상담사 존재 여부 확인
-        val counselor = counselorService.findById(counselorId)
+        val counselor =
+            counselorService.findById(counselorId)
+                ?: throw IllegalArgumentException("상담사를 찾을 수 없습니다: $counselorId")
 
         // 세션 생성
         val session =
@@ -111,30 +114,37 @@ class ChatSessionService(
      * 종료된 세션에 대한 상담사 평가
      * @param sessionId 평가할 세션 ID
      * @param userId 사용자 ID (권한 확인용)
-     * @param rating 평점 (1-5)
-     * @param feedback 피드백 텍스트 (선택사항)
-     * @return 생성된 평가 정보
+     * @param request 평가 요청 (rating 1-10, feedback)
+     * @return 평가 결과 (RsData)
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      * @throws IllegalStateException 진행 중인 세션인 경우
      */
     fun rateSession(
         sessionId: Long,
         userId: Long,
-        rating: Int,
-        feedback: String?,
-    ): CounselorRating {
+        request: RateSessionRequest,
+    ): RsData<String> {
         val session = getSession(sessionId, userId)
 
         check(session.closedAt != null) {
             "진행 중인 세션은 평가할 수 없습니다"
         }
 
+        // 중복 평가 체크
+        if (counselorService.isSessionRated(sessionId)) {
+            return RsData.of(
+                "F-400",
+                "이미 평가가 완료된 세션입니다",
+                null,
+            )
+        }
+
         return counselorService.addRating(
             sessionId = sessionId,
             userId = userId,
             counselorId = session.counselorId,
-            rating = rating,
-            feedback = feedback,
+            session = session,
+            request = request,
         )
     }
 
@@ -266,7 +276,9 @@ class ChatSessionService(
         val savedUserMessage = messageRepository.save(userMessage)
 
         // 4. 상담사 정보 조회
-        val counselor = counselorService.findById(session.counselorId)
+        val counselor =
+            counselorService.findById(session.counselorId)
+                ?: error("상담사를 찾을 수 없습니다: ${session.counselorId}")
 
         // 5. 대화 히스토리 구성 (모든 메시지에 phase 정보 포함)
         val history =

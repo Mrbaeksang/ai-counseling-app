@@ -5,11 +5,11 @@
 ```mermaid
 erDiagram
     users ||--o{ chat_sessions : "has"
-    users ||--o{ user_favorite_counselors : "favorites"
+    users ||--o{ favorite_counselors : "favorites"
     users ||--o{ counselor_ratings : "rates"
     
     counselors ||--o{ chat_sessions : "conducts"
-    counselors ||--o{ user_favorite_counselors : "favorited_by"
+    counselors ||--o{ favorite_counselors : "favorited_by"
     counselors ||--o{ counselor_ratings : "rated_by"
     
     chat_sessions ||--o{ messages : "contains"
@@ -32,8 +32,8 @@ erDiagram
         varchar name
         varchar title
         text description
-        text personality_matrix "JSON: 상담사 성격 매트릭스"
-        text base_prompt "AI 지시사항"
+        text base_prompt "AI 지시사항 (성격 특성 포함)"
+        varchar avatar_url "상담사 프로필 이미지 URL"
         boolean is_active
         timestamp created_at
         timestamp updated_at
@@ -62,7 +62,7 @@ erDiagram
         timestamp created_at
     }
     
-    user_favorite_counselors {
+    favorite_counselors {
         bigint id PK
         bigint user_id FK
         bigint counselor_id FK
@@ -74,7 +74,7 @@ erDiagram
         bigint user_id FK
         bigint counselor_id FK
         bigint session_id FK
-        decimal rating "0.5-5.0, 0.5 단위"
+        integer rating "1-10 (UI: 별 0.5개=1, 별 5개=10)"
         text review
         timestamp created_at
     }
@@ -91,9 +91,10 @@ erDiagram
 
 ### 2. counselors
 - 상담사(AI 페르소나) 정보
-- `personality_matrix`: 상담사 성격 특성 (JSON)
-- `base_prompt`: AI에게 전달할 기본 지시사항
-- 현대적 언어 사용, 단계별 상담 진행 지시 포함
+- `base_prompt`: AI에게 전달할 기본 지시사항 (성격 특성 포함)
+  - 상담 스타일, 질문 성향, 공감 수준 등을 텍스트로 포함
+  - 현대적 언어 사용, 단계별 상담 진행 지시 포함
+- `avatar_url`: 프론트엔드에서 표시할 상담사 프로필 이미지
 
 ### 3. chat_sessions
 - 사용자와 상담사 간의 대화 세션
@@ -114,12 +115,16 @@ erDiagram
 - `ai_phase_assessment`: AI가 각 메시지마다 판단한 단계 정보
 - `sender_type`: 메시지 발신자 (USER/AI)
 
-### 5. user_favorite_counselors
+### 5. favorite_counselors
 - 사용자가 즐겨찾기한 상담사
 - 빠른 접근을 위한 매핑 테이블
 
 ### 6. counselor_ratings
 - 세션 종료 후 상담사 평가
+- `rating`: 1-10 정수값 (DB 저장)
+  - UI 표시: 별점 0.5~5.0 (반개 단위)
+  - 변환: DB값 ÷ 2 = 별점, 별점 × 2 = DB값
+  - 예: 1=★☆☆☆☆, 5=★★★☆☆, 10=★★★★★
 - 매칭 알고리즘 개선에 활용
 
 ## 인덱스 전략

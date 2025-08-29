@@ -41,7 +41,11 @@
       "mcp__serena__find_symbol",
       "mcp__jetbrains__list_directory_tree_in_folder",
       "Read(/C:\\Users\\qortk\\IdeaProjects\\ai_counseling_app\\android\\app/**)",
-      "Read(/C:\\Users\\qortk\\IdeaProjects\\ai_counseling_app\\android/**)"
+      "Read(/C:\\Users\\qortk\\IdeaProjects\\ai_counseling_app\\android/**)",
+      "mcp__serena__find_file",
+      "mcp__serena__replace_regex",
+      "mcp__serena__insert_after_symbol",
+      "mcp__jetbrains__get_current_file_errors"
     ],
     "deny": [],
     "ask": []

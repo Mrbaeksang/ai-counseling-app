@@ -22,8 +22,6 @@ tags:
     description: 상담사 관련
   - name: sessions
     description: 세션 관련
-  - name: ai-helper
-    description: AI 도우미
 
 paths:
   # ===== 인증 =====
@@ -417,8 +415,8 @@ paths:
                 rating:
                   type: integer
                   minimum: 1
-                  maximum: 5
-                  description: "별점 (1-5)"
+                  maximum: 10
+                  description: "별점 (1-10, 별 반개 단위)"
                 feedback:
                   type: string
                   description: 피드백 텍스트 (선택)
@@ -487,34 +485,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionDetail'
-
-  # ===== AI 도우미 =====
-  /ai-helper/recommend:
-    post:
-      tags: [ai-helper]
-      summary: AI 기반 상담사 추천
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [concern]
-              properties:
-                concern:
-                  type: string
-                  description: 고민 내용
-      responses:
-        200:
-          description: 추천 상담사 목록
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CounselorRecommendation'
 
 components:
   securitySchemes:
@@ -590,11 +560,14 @@ components:
           type: string
         title:
           type: string
-        description:
+        avatarUrl:
           type: string
+          nullable: true
         averageRating:
-          type: number
-          format: float
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: "평균 별점 (1-10, 별 반개 단위)"
         totalSessions:
           type: integer
 
@@ -603,22 +576,12 @@ components:
         - $ref: '#/components/schemas/CounselorListItem'
         - type: object
           properties:
-            personalityMatrix:
-              type: object
-              description: 상담사 성격 특성
-            specialties:
-              type: array
-              items:
-                type: string
-
-    CounselorRecommendation:
-      allOf:
-        - $ref: '#/components/schemas/CounselorListItem'
-        - type: object
-          properties:
-            matchReason:
+            description:
               type: string
-              description: 추천 이유
+              description: 상담사 상세 설명
+            totalRatings:
+              type: integer
+              description: 총 평가 개수
 
     # ===== 세션 =====
     SessionListItem:
@@ -692,7 +655,8 @@ components:
         rating:
           type: integer
           minimum: 1
-          maximum: 5
+          maximum: 10
+          description: "별점 (1-10, 별 반개 단위)"
         feedback:
           type: string
         createdAt:

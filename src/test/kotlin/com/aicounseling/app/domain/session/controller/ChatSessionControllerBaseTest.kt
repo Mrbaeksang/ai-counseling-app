@@ -97,9 +97,8 @@ abstract class ChatSessionControllerBaseTest(
                     name = "아리스토텔레스",
                     title = "고대 그리스의 철학자",
                     description = "실용적 윤리학과 행복론의 대가",
-                    personalityMatrix = """{"wisdom": 9, "empathy": 8, "logic": 10}""",
                     basePrompt = "당신은 아리스토텔레스입니다.",
-                    specialties = """["윤리학", "논리학", "형이상학"]""",
+                    avatarUrl = "https://example.com/aristotle.jpg",
                 ),
             )
 
