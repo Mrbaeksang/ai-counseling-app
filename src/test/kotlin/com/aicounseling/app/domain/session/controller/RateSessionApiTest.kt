@@ -1,7 +1,7 @@
 package com.aicounseling.app.domain.session.controller
 
+import com.aicounseling.app.domain.counselor.dto.RateSessionRequest
 import com.aicounseling.app.domain.counselor.repository.CounselorRatingRepository
-import com.aicounseling.app.domain.session.dto.RateSessionRequest
 import com.aicounseling.app.domain.session.entity.ChatSession
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
@@ -107,11 +107,8 @@ class RateSessionApiTest
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.resultCode").value("S-1"))
-                .andExpect(jsonPath("$.msg").value("평가 완료"))
-                // rating entity의 id
-                .andExpect(jsonPath("$.data.id").exists())
-                .andExpect(jsonPath("$.data.rating").value(10))
-                .andExpect(jsonPath("$.data.feedback").value("매우 유익한 상담이었습니다. 니체의 철학을 잘 설명해주셨어요."))
+                .andExpect(jsonPath("$.msg").value("평가가 등록되었습니다"))
+                .andExpect(jsonPath("$.data").value("평가 등록 성공"))
 
             // DB 확인
             val ratings = ratingRepository.findAll()
@@ -233,10 +230,9 @@ class RateSessionApiTest
             )
                 // ResponseAspect disabled in test profile
                 .andExpect(status().isOk)
-                // check 실패 -> IllegalStateException -> F-409
-                .andExpect(jsonPath("$.resultCode").value("F-409"))
-                // "이미 평가한 세션입니다"
-                .andExpect(jsonPath("$.msg").exists())
+                // 이미 평가된 세션
+                .andExpect(jsonPath("$.resultCode").value("F-400"))
+                .andExpect(jsonPath("$.msg").value("이미 평가가 완료된 세션입니다"))
 
             // DB 확인 - 기존 평가가 그대로 유지되어야 함
             val ratings = ratingRepository.findAll()

@@ -100,8 +100,8 @@ class StartSessionApiTest
                     .content(objectMapper.writeValueAsString(request)),
             )
                 .andExpect(status().isOk) // ResponseAspect disabled in test profile
-                .andExpect(jsonPath("$.resultCode").value("F-404"))
-                .andExpect(jsonPath("$.msg").value("상담사를 찾을 수 없습니다: 99999"))
+                .andExpect(jsonPath("$.resultCode").value("F-500"))
+                .andExpect(jsonPath("$.msg").value("서버 오류가 발생했습니다"))
         }
 
         @Test

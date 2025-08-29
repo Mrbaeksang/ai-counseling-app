@@ -1,127 +1,143 @@
 package com.aicounseling.app.domain.counselor.service
 
+import com.aicounseling.app.domain.counselor.dto.CounselorDetailResponse
+import com.aicounseling.app.domain.counselor.dto.CounselorListResponse
+import com.aicounseling.app.domain.counselor.dto.FavoriteCounselorResponse
+import com.aicounseling.app.domain.counselor.dto.RateSessionRequest
 import com.aicounseling.app.domain.counselor.entity.Counselor
 import com.aicounseling.app.domain.counselor.entity.CounselorRating
 import com.aicounseling.app.domain.counselor.entity.FavoriteCounselor
 import com.aicounseling.app.domain.counselor.repository.CounselorRatingRepository
 import com.aicounseling.app.domain.counselor.repository.CounselorRepository
 import com.aicounseling.app.domain.counselor.repository.FavoriteCounselorRepository
-import com.aicounseling.app.domain.session.repository.ChatSessionRepository
-import com.aicounseling.app.domain.user.entity.User
+import com.aicounseling.app.domain.session.entity.ChatSession
 import com.aicounseling.app.domain.user.repository.UserRepository
-import com.aicounseling.app.global.constants.AppConstants
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.aicounseling.app.global.pagination.PagedResponse
+import com.aicounseling.app.global.rsData.RsData
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * CounselorService - 상담사 비즈니스 로직
+ * CounselorService - 상담사 관련 비즈니스 로직
  *
- * API 명세서 매핑:
- * - GET /counselors → findAllWithSort()
- * - GET /counselors/{id} → findById()
- * - GET /counselors/favorites → getFavoriteCounselors()
- * - POST /counselors/{id}/favorite → addFavorite()
- * - DELETE /counselors/{id}/favorite → removeFavorite()
+ * 주요 기능:
+ * - 상담사 목록 조회 (정렬, 페이징)
+ * - 상담사 상세 정보 조회
+ * - 즐겨찾기 관리
  */
 @Service
 @Transactional(readOnly = true)
 class CounselorService(
     private val counselorRepository: CounselorRepository,
     private val favoriteCounselorRepository: FavoriteCounselorRepository,
-    private val sessionRepository: ChatSessionRepository,
-    private val ratingRepository: CounselorRatingRepository,
+    private val counselorRatingRepository: CounselorRatingRepository,
     private val userRepository: UserRepository,
-    private val objectMapper: ObjectMapper,
 ) {
     /**
-     * GET /counselors/{id} - 상담사 상세 조회
-     * 통계 정보 포함해서 반환
+     * 상담사 목록 조회
+     * GET /counselors?sort={sort}
      */
-    fun findById(counselorId: Long): Counselor {
+    fun getCounselors(
+        sort: String?,
+        pageable: Pageable,
+    ): RsData<PagedResponse<CounselorListResponse>> {
+        // 정렬 옵션 검증 (popular, rating, recent)
+        val validSorts = listOf("popular", "rating", "recent")
+        val finalSort: String = if (!sort.isNullOrEmpty() && sort in validSorts) sort else "popular"
+
+        val counselors = counselorRepository.findCounselorsWithStats(finalSort, pageable)
+
+        val pagedResponse = PagedResponse.from(counselors)
+
+        return RsData.of(
+            "S-1",
+            "상담사 목록 조회 성공",
+            pagedResponse,
+        )
+    }
+
+    /**
+     * 상담사 상세 정보 조회
+     * GET /counselors/{id}
+     */
+    fun getCounselorDetail(
+        counselorId: Long,
+        userId: Long?,
+    ): RsData<CounselorDetailResponse> {
         val counselor =
-            counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
+            counselorRepository.findCounselorDetailById(counselorId)
+                ?: return RsData.of(
+                    "F-404",
+                    "상담사를 찾을 수 없습니다",
+                    null,
+                )
+
+        // 사용자가 로그인한 경우 즐겨찾기 여부 확인
+        val counselorWithFavorite =
+            if (userId != null) {
+                val isFavorite = favoriteCounselorRepository.existsByUserIdAndCounselorId(userId, counselorId)
+                counselor.copy(isFavorite = isFavorite)
+            } else {
+                counselor
             }
 
-        // 통계 정보 설정
-        counselor.totalSessions = sessionRepository.countByCounselorId(counselor.id).toInt()
-        counselor.averageRating = calculateAverageRating(counselor.id)
-        counselor.specialtyTags = objectMapper.readValue<List<String>>(counselor.specialties)
-
-        return counselor
+        return RsData.of(
+            "S-1",
+            "상담사 정보 조회 성공",
+            counselorWithFavorite,
+        )
     }
 
     /**
-     * GET /counselors?sort={sort} - 상담사 목록 조회
-     * @param sort: popular(인기순), rating(평점순), recent(최신순), null(기본)
-     * @return 상담사 목록 (없으면 빈 리스트)
+     * 즐겨찾기 상담사 목록 조회
+     * GET /counselors/favorites
      */
-    fun findAllWithSort(sort: String?): List<Counselor> {
-        // Repository 메서드로 조회 (없으면 빈 리스트 반환)
-        val counselors =
-            when (sort) {
-                "recent" -> counselorRepository.findByIsActiveTrueOrderByCreatedAtDesc()
-                else -> counselorRepository.findByIsActiveTrue() // popular, rating은 메모리 정렬
-            }
+    fun getFavoriteCounselors(
+        userId: Long,
+        pageable: Pageable,
+    ): RsData<PagedResponse<FavoriteCounselorResponse>> {
+        val favorites = favoriteCounselorRepository.findFavoritesWithRating(userId, pageable)
 
-        // 상담사가 없으면 빈 리스트 즉시 반환
-        if (counselors.isEmpty()) {
-            return emptyList()
-        }
+        val pagedResponse = PagedResponse.from(favorites)
 
-        // 각 상담사의 통계 정보 계산
-        counselors.forEach { counselor ->
-            counselor.totalSessions = sessionRepository.countByCounselorId(counselor.id).toInt()
-            counselor.averageRating = calculateAverageRating(counselor.id)
-            counselor.specialtyTags = objectMapper.readValue<List<String>>(counselor.specialties)
-        }
-
-        // 메모리에서 정렬 (popular, rating)
-        return when (sort) {
-            "popular" -> counselors.sortedByDescending { it.totalSessions }
-            "rating" -> counselors.sortedByDescending { it.averageRating }
-            else -> counselors
-        }
+        return RsData.of(
+            "S-1",
+            "즐겨찾기 목록 조회 성공",
+            pagedResponse,
+        )
     }
 
     /**
-     * GET /counselors/favorites - 사용자의 즐겨찾기 상담사 목록
-     */
-    fun getFavoriteCounselors(user: User): List<Counselor> {
-        val favorites = favoriteCounselorRepository.findByUser(user)
-        val counselors = favorites.map { it.counselor }
-
-        // 통계 정보 추가
-        counselors.forEach { counselor ->
-            counselor.totalSessions = sessionRepository.countByCounselorId(counselor.id).toInt()
-            counselor.averageRating = calculateAverageRating(counselor.id)
-            counselor.specialtyTags = objectMapper.readValue<List<String>>(counselor.specialties)
-        }
-
-        return counselors
-    }
-
-    /**
-     * POST /counselors/{id}/favorite - 즐겨찾기 추가
-     * @return 즐겨찾기에 추가된 상담사
+     * 상담사 즐겨찾기 추가
+     * POST /counselors/{id}/favorite
      */
     @Transactional
     fun addFavorite(
-        user: User,
+        userId: Long,
         counselorId: Long,
-    ): Counselor {
-        val counselor =
-            counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
-            }
+    ): RsData<String> {
+        // 사용자 조회
+        val user =
+            userRepository.findById(userId).orElse(null)
+                ?: return RsData.of("F-404", "사용자를 찾을 수 없습니다", null)
 
-        // 중복 체크
-        check(!favoriteCounselorRepository.existsByUserAndCounselor(user, counselor)) {
-            "이미 즐겨찾기한 상담사입니다"
+        // 상담사 조회 (활성 상태 체크 필요)
+        val counselor =
+            counselorRepository.findById(counselorId).orElse(null)
+                ?: return RsData.of("F-404", "상담사를 찾을 수 없습니다", null)
+
+        if (!counselor.isActive) {
+            return RsData.of("F-400", "비활성화된 상담사입니다", null)
         }
 
+        // 이미 즐겨찾기인지 확인
+        val exists = favoriteCounselorRepository.existsByUserAndCounselor(user, counselor)
+        if (exists) {
+            return RsData.of("F-409", "이미 즐겨찾기한 상담사입니다", null)
+        }
+
+        // 즐겨찾기 추가
         val favorite =
             FavoriteCounselor(
                 user = user,
@@ -129,99 +145,122 @@ class CounselorService(
             )
         favoriteCounselorRepository.save(favorite)
 
-        return counselor
+        return RsData.of(
+            "S-1",
+            "즐겨찾기가 추가되었습니다",
+            "즐겨찾기 추가 성공",
+        )
     }
 
     /**
-     * DELETE /counselors/{id}/favorite - 즐겨찾기 삭제
-     * @return 즐겨찾기에서 제거된 상담사
+     * 상담사 즐겨찾기 제거
+     * DELETE /counselors/{id}/favorite
      */
     @Transactional
     fun removeFavorite(
-        user: User,
+        userId: Long,
         counselorId: Long,
-    ): Counselor {
+    ): RsData<String> {
+        // 사용자 조회
+        val user =
+            userRepository.findById(userId).orElse(null)
+                ?: return RsData.of("F-404", "사용자를 찾을 수 없습니다", null)
+
+        // 상담사 조회
         val counselor =
-            counselorRepository.findById(counselorId).orElseThrow {
-                NoSuchElementException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
-            }
+            counselorRepository.findById(counselorId).orElse(null)
+                ?: return RsData.of("F-404", "상담사를 찾을 수 없습니다", null)
+
+        // 비활성 상담사 체크
+        if (!counselor.isActive) {
+            return RsData.of("F-400", "비활성 상담사입니다", null)
+        }
+
+        // 즐겨찾기 존재 확인
+        val exists = favoriteCounselorRepository.existsByUserAndCounselor(user, counselor)
+        if (!exists) {
+            return RsData.of("F-404", "즐겨찾기하지 않은 상담사입니다", null)
+        }
+
+        // 즐겨찾기 해제
         favoriteCounselorRepository.deleteByUserAndCounselor(user, counselor)
 
-        return counselor
+        return RsData.of(
+            "S-1",
+            "즐겨찾기가 해제되었습니다",
+            "즐겨찾기 제거 성공",
+        )
     }
 
+    /**
+     * 상담사 엔티티 조회 (내부 사용)
+     * ChatSessionService에서 사용
+     */
+    fun findById(counselorId: Long): Counselor? {
+        return counselorRepository.findById(counselorId)
+            .filter { it.isActive }
+            .orElse(null)
+    }
+
+    /**
+     * 세션 평가 추가
+     * ChatSessionService에서 호출
+     *
+     * @param sessionId 세션 ID
+     * @param userId 사용자 ID
+     * @param counselorId 상담사 ID
+     * @param request 평가 요청 (rating, feedback)
+     * @return 평가 결과
+     */
     @Transactional
     fun addRating(
         sessionId: Long,
         userId: Long,
         counselorId: Long,
-        rating: Int,
-        feedback: String?,
-    ): CounselorRating {
-        check(!ratingRepository.existsBySessionId(sessionId)) {
-            "이미 평가한 세션입니다"
+        session: ChatSession,
+        request: RateSessionRequest,
+    ): RsData<String> {
+        // 이미 평가했는지 확인
+        if (counselorRatingRepository.existsBySessionId(sessionId)) {
+            return RsData.of("F-400", "이미 평가한 세션입니다", null)
         }
 
-        val minRating = AppConstants.Rating.MIN_RATING
-        val maxRating = AppConstants.Rating.MAX_RATING
-        check(rating in minRating..maxRating) {
-            "${AppConstants.ErrorMessages.INVALID_RATING}: $minRating-$maxRating"
-        }
-
+        // 사용자 조회
         val user =
-            userRepository.findById(userId).orElseThrow {
-                IllegalArgumentException("${AppConstants.ErrorMessages.USER_NOT_FOUND}: $userId")
-            }
+            userRepository.findById(userId).orElse(null)
+                ?: return RsData.of("F-404", "사용자를 찾을 수 없습니다", null)
 
+        // 상담사 조회
         val counselor =
-            counselorRepository.findById(counselorId).orElseThrow {
-                IllegalArgumentException("${AppConstants.ErrorMessages.COUNSELOR_NOT_FOUND}: $counselorId")
-            }
+            counselorRepository.findById(counselorId).orElse(null)
+                ?: return RsData.of("F-404", "상담사를 찾을 수 없습니다", null)
 
-        val session =
-            sessionRepository.findById(sessionId).orElseThrow {
-                IllegalArgumentException("${AppConstants.ErrorMessages.SESSION_NOT_FOUND}: $sessionId")
-            }
-
-        val counselorRating =
+        // 평가 생성
+        val rating =
             CounselorRating(
                 user = user,
                 counselor = counselor,
                 session = session,
-                // Int 그대로 사용 (1~10)
-                rating = rating,
-                review = feedback,
+                rating = request.rating,
+                review = request.feedback,
             )
 
-        val savedRating = ratingRepository.save(counselorRating)
+        counselorRatingRepository.save(rating)
 
-        counselor.averageRating = calculateAverageRating(counselorId)
-        counselorRepository.save(counselor)
-
-        return savedRating
+        return RsData.of(
+            "S-1",
+            "평가가 등록되었습니다",
+            "평가 등록 성공",
+        )
     }
 
     /**
-     * 평균 평점 계산 (내부 헬퍼 메서드)
-     * CounselorRating 테이블에서 평점만 추출해서 평균 계산
-     * rating은 1~10 정수이므로 /2 하여 0.5~5.0 별점으로 변환
+     * 세션이 이미 평가되었는지 확인
+     *
+     * @param sessionId 세션 ID
+     * @return 평가 여부
      */
-    private fun calculateAverageRating(counselorId: Long): Double {
-        val ratings = ratingRepository.findByCounselorId(counselorId)
-
-        return if (ratings.isNotEmpty()) {
-            ratings.map { it.rating }.average() / 2.0 // 1~10 평균을 0.5~5.0으로 변환
-        } else {
-            0.0 // 평가 없으면 0점
-        }
-    }
-
-    /**
-     * 특정 상담사가 진행한 총 세션 수 조회
-     * @param counselorId 상담사 ID
-     * @return 총 세션 수
-     */
-    fun getSessionCount(counselorId: Long): Long {
-        return sessionRepository.countByCounselorId(counselorId)
+    fun isSessionRated(sessionId: Long): Boolean {
+        return counselorRatingRepository.existsBySessionId(sessionId)
     }
 }

@@ -3,47 +3,40 @@ package com.aicounseling.app.domain.counselor.entity
 import com.aicounseling.app.global.entity.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.Index
 import jakarta.persistence.Table
-import jakarta.persistence.Transient
 
 /**
- * Counselor 엔티티 - AI 상담사 정보 (순수 데이터만)
+ * Counselor 엔티티 - AI 철학 상담사 (순수 데이터만)
+ * 비즈니스 로직은 CounselorService로 이동
  *
- * name: 상담사 이름 (예: "소크라테스")
- * title: 직함 (예: "고대 그리스 철학자")
- * description: 상담사 소개 (예: "질문을 통해 스스로 답을 찾도록 돕습니다")
- * personalityMatrix: 성격 특성 JSON
- * basePrompt: AI 프롬프트
- * specialties: 전문 분야 JSON 배열
- *
- * @Transient 필드들은 DB 저장 안함, 런타임 계산용
- * totalSessions: COUNT 쿼리로 계산
- * averageRating: AVG 쿼리로 계산
+ * ERD 기준:
+ * - name: 상담사 이름 (예: "소크라테스")
+ * - title: 직함 (예: "고대 그리스 철학자")
+ * - description: 상담사 소개
+ * - basePrompt: AI 프롬프트 (성격 특성 포함)
+ * - avatarUrl: 프로필 이미지 URL
+ * - isActive: 활성화 상태
  */
 @Entity
-@Table(name = "counselors")
+@Table(
+    name = "counselors",
+    indexes = [
+        Index(name = "idx_counselor_active", columnList = "is_active"),
+        Index(name = "idx_counselor_name", columnList = "name"),
+    ],
+)
 class Counselor(
     @Column(nullable = false, length = 50)
     val name: String,
     @Column(nullable = false, length = 100)
     val title: String,
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, columnDefinition = "TEXT")
     val description: String,
-    @Column(name = "personality_matrix", nullable = false, columnDefinition = "TEXT")
-    val personalityMatrix: String,
     @Column(name = "base_prompt", nullable = false, columnDefinition = "TEXT")
-    var basePrompt: String,
-    @Column(name = "specialties", nullable = false, columnDefinition = "TEXT")
-    val specialties: String,
+    val basePrompt: String,
+    @Column(name = "avatar_url", length = 500)
+    val avatarUrl: String? = null,
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
-) : BaseEntity() {
-    @Transient
-    var totalSessions: Int = 0
-
-    @Transient
-    var averageRating: Double = 0.0
-
-    @Transient
-    var specialtyTags: List<String> = emptyList() // 전문 분야 태그
-}
+) : BaseEntity()

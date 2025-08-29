@@ -1,9 +1,9 @@
 package com.aicounseling.app.domain.session.controller
 
+import com.aicounseling.app.domain.counselor.dto.RateSessionRequest
 import com.aicounseling.app.domain.session.dto.CreateSessionRequest
 import com.aicounseling.app.domain.session.dto.CreateSessionResponse
 import com.aicounseling.app.domain.session.dto.MessageItem
-import com.aicounseling.app.domain.session.dto.RateSessionRequest
 import com.aicounseling.app.domain.session.dto.SendMessageRequest
 import com.aicounseling.app.domain.session.dto.SendMessageResponse
 import com.aicounseling.app.domain.session.dto.SessionListResponse
@@ -197,31 +197,20 @@ class ChatSessionController(
     fun rateSession(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: RateSessionRequest,
-    ): RsData<Any> {
+    ): RsData<String> {
         val userId =
             rq.currentUserId
                 ?: return RsData.of("F-401", "로그인이 필요합니다", null)
 
-        val rating =
+        val result =
             sessionService.rateSession(
                 sessionId = sessionId,
                 userId = userId,
-                rating = request.rating,
-                feedback = request.feedback,
+                request = request,
             )
 
-        return RsData.of(
-            "S-1",
-            "평가 완료",
-            mapOf(
-                "id" to rating.id,
-                "sessionId" to sessionId,
-                "counselorId" to rating.counselor.id,
-                "rating" to rating.rating,
-                "feedback" to rating.review,
-                "createdAt" to rating.createdAt,
-            ),
-        )
+        // Service에서 이미 RsData를 반환하므로 그대로 반환
+        return result
     }
 
     /**
