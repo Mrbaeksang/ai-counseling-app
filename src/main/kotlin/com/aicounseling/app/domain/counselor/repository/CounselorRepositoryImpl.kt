@@ -120,7 +120,8 @@ class CounselorRepositoryImpl(
             title = counselor.title,
             description = counselor.description,
             avatarUrl = counselor.avatarUrl,
-            // Int 타입으로 변환
+            // 평점을 Int로 변환 (소수점 첫째 자리까지 표현)
+            // 예: 4.3 → 43 (UI에서 4.3으로 표시)
             averageRating = (avgRating * 10).roundToInt(),
             totalSessions = sessionCount.toInt(),
             totalRatings = ratingCount.toInt(),
