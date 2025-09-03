@@ -15,6 +15,7 @@ import com.aicounseling.app.domain.session.repository.MessageRepository
 import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.rsData.RsData
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -30,6 +31,7 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class ChatSessionService(
+    private val rq: com.aicounseling.app.global.rq.Rq,
     private val sessionRepository: ChatSessionRepository,
     private val counselorService: CounselorService,
     private val messageRepository: MessageRepository,
@@ -49,10 +51,13 @@ class ChatSessionService(
      */
     @Transactional(readOnly = true)
     fun getUserSessions(
-        userId: Long,
         bookmarked: Boolean?,
         pageable: Pageable,
     ): Page<SessionListResponse> {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         // Custom Repository 메서드를 사용하여 N+1 문제 해결
         // 한 번의 쿼리로 Session과 Counselor 정보를 함께 조회
         return sessionRepository.findSessionsWithCounselor(userId, bookmarked, pageable)
@@ -64,10 +69,11 @@ class ChatSessionService(
      * @param counselorId 상담사 ID
      * @return 생성된 세션 응답 DTO
      */
-    fun startSession(
-        userId: Long,
-        counselorId: Long,
-    ): CreateSessionResponse {
+    fun startSession(counselorId: Long): CreateSessionResponse {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         // 상담사 존재 여부 확인
         val counselor =
             counselorService.findById(counselorId)
@@ -97,10 +103,11 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      * @throws IllegalStateException 이미 종료된 세션인 경우
      */
-    fun closeSession(
-        sessionId: Long,
-        userId: Long,
-    ) {
+    fun closeSession(sessionId: Long) {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         val session = getSession(sessionId, userId)
 
         check(session.closedAt == null) {
@@ -122,9 +129,12 @@ class ChatSessionService(
      */
     fun rateSession(
         sessionId: Long,
-        userId: Long,
         request: RateSessionRequest,
     ): RsData<String> {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         val session = getSession(sessionId, userId)
 
         check(session.closedAt != null) {
@@ -157,10 +167,11 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
     @Transactional
-    fun toggleBookmark(
-        sessionId: Long,
-        userId: Long,
-    ): Boolean {
+    fun toggleBookmark(sessionId: Long): Boolean {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         val session = getSession(sessionId, userId)
 
         session.isBookmarked = !session.isBookmarked
@@ -194,9 +205,12 @@ class ChatSessionService(
      */
     fun updateSessionTitle(
         sessionId: Long,
-        userId: Long,
         newTitle: String,
     ): ChatSession {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         val session = getSession(sessionId, userId)
 
         session.title = newTitle.trim()
@@ -214,9 +228,12 @@ class ChatSessionService(
     @Transactional(readOnly = true)
     fun getSessionMessages(
         sessionId: Long,
-        userId: Long,
         pageable: Pageable,
     ): Page<MessageItem> {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         getSession(sessionId, userId) // 권한 확인용
 
         val messages = messageRepository.findBySessionId(sessionId, pageable)
@@ -244,9 +261,12 @@ class ChatSessionService(
      */
     fun sendMessage(
         sessionId: Long,
-        userId: Long,
         content: String,
     ): Triple<Message, Message, ChatSession> {
+        val userId =
+            rq.currentUserId
+                ?: error("로그인이 필요합니다")
+
         check(content.isNotBlank()) { "메시지 내용을 입력해주세요" }
 
         val session = getSession(sessionId, userId)
@@ -652,20 +672,10 @@ class ChatSessionService(
             val jsonNode = objectMapper.readTree(rawResponse.trim())
 
             // content 필드 추출 (필수)
+            // Jackson의 asText()가 자동으로 이스케이프 처리를 수행함
             val content =
                 jsonNode.get("content")?.asText()
                     ?: throw IllegalArgumentException("content 필드가 없습니다")
-
-            // Jackson의 asText()는 자동으로 언이스케이프 처리하지만 추가 안전장치
-            // \n, \t 등의 이스케이프 문자를 실제 문자로 변환
-            val unescapedContent =
-                content
-                    .replace("\\n", "\n")
-                    .replace("\\t", "\t")
-                    .replace("\\r", "\r")
-                    .replace("\\\"", "\"")
-                    .replace("\\'", "'")
-                    .replace("\\\\", "\\")
 
             // phase 필드 추출 (필수)
             val phaseString =
@@ -683,13 +693,13 @@ class ChatSessionService(
             // title 필드 추출 (첫 메시지일 때만)
             val title =
                 if (expectTitle) {
-                    jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_PARSE_MAX_LENGTH)
+                    jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_MAX_LENGTH)
                 } else {
                     null
                 }
 
-            Triple(unescapedContent, phase, title)
-        } catch (e: com.fasterxml.jackson.core.JsonProcessingException) {
+            Triple(content, phase, title)
+        } catch (e: JsonProcessingException) {
             logger.error("JSON 파싱 실패: {}", e.message, e)
             // JSON 파싱 실패 시 폴백 처리
             parseFallbackResponse(rawResponse)

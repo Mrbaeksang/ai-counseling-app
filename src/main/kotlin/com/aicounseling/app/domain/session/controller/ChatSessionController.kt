@@ -58,9 +58,10 @@ class ChatSessionController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
     ): RsData<PagedResponse<SessionListResponse>> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
         // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
         val pageable =
@@ -70,7 +71,7 @@ class ChatSessionController(
                 sort = Sort.by(Sort.Direction.DESC, "lastMessageAt"),
             )
         // N+1 문제가 이미 해결된 getUserSessions 호출
-        val sessionPage = sessionService.getUserSessions(userId, bookmarked, pageable)
+        val sessionPage = sessionService.getUserSessions(bookmarked, pageable)
 
         // PagedResponse로 변환 (이미 SessionListResponse로 매핑됨)
         val response = PagedResponse.from(sessionPage)
@@ -90,11 +91,12 @@ class ChatSessionController(
     fun startSession(
         @Valid @RequestBody request: CreateSessionRequest,
     ): RsData<CreateSessionResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
-        val response = sessionService.startSession(userId, request.counselorId)
+        val response = sessionService.startSession(request.counselorId)
 
         return RsData.of(
             "S-1",
@@ -111,11 +113,12 @@ class ChatSessionController(
     fun closeSession(
         @PathVariable sessionId: Long,
     ): RsData<Unit> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
-        sessionService.closeSession(sessionId, userId)
+        sessionService.closeSession(sessionId)
 
         return RsData.of(
             "S-1",
@@ -134,9 +137,10 @@ class ChatSessionController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
     ): RsData<PagedResponse<MessageItem>> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
         // PageUtils를 사용하여 페이지 요청 생성 (자동 검증 포함)
         val pageable =
@@ -146,7 +150,7 @@ class ChatSessionController(
                 sort = Sort.by(Sort.Direction.ASC, "createdAt"),
             )
         // 수정된 getSessionMessages 호출 (이제 Page<MessageItem> 반환)
-        val messagePage = sessionService.getSessionMessages(sessionId, userId, pageable)
+        val messagePage = sessionService.getSessionMessages(sessionId, pageable)
 
         // PagedResponse로 변환 (이미 MessageItem으로 매핑됨)
         val response = PagedResponse.from(messagePage)
@@ -167,14 +171,14 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: SendMessageRequest,
     ): RsData<SendMessageResponse> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
         val (userMessage, aiMessage, session) =
             sessionService.sendMessage(
                 sessionId = sessionId,
-                userId = userId,
                 content = request.content,
             )
 
@@ -198,14 +202,14 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: RateSessionRequest,
     ): RsData<String> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
         val result =
             sessionService.rateSession(
                 sessionId = sessionId,
-                userId = userId,
                 request = request,
             )
 
@@ -221,11 +225,12 @@ class ChatSessionController(
     fun toggleBookmark(
         @PathVariable sessionId: Long,
     ): RsData<Map<String, Any>> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
-        val isBookmarked = sessionService.toggleBookmark(sessionId, userId)
+        val isBookmarked = sessionService.toggleBookmark(sessionId)
 
         return RsData.of(
             "S-1",
@@ -246,11 +251,12 @@ class ChatSessionController(
         @PathVariable sessionId: Long,
         @Valid @RequestBody request: UpdateSessionTitleRequest,
     ): RsData<Any?> {
-        val userId =
-            rq.currentUserId
-                ?: return RsData.of("F-401", "로그인이 필요합니다", null)
+        // 인증 확인
+        if (rq.currentUserId == null) {
+            return RsData.of("F-401", "로그인이 필요합니다", null)
+        }
 
-        sessionService.updateSessionTitle(sessionId, userId, request.title)
+        sessionService.updateSessionTitle(sessionId, request.title)
 
         return RsData.of(
             "S-1",

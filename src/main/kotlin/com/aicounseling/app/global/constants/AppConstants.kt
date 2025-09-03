@@ -43,7 +43,6 @@ object AppConstants {
         const val AI_RETRY_MAX_COUNT = 3
         const val AI_RETRY_DELAY_BASE = 1000L
         const val AI_RESPONSE_MIN_LENGTH = 10
-        const val TITLE_PARSE_MAX_LENGTH = 15
         const val LOG_PREVIEW_LENGTH = 100
     }
 
