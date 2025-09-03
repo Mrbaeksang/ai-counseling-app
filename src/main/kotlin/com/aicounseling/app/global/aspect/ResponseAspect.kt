@@ -7,12 +7,13 @@ import org.aspectj.lang.annotation.Aspect
 import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 @Aspect
-// @Component  // 임시로 비활성화
-@Profile("!test", "!dev") // test와 dev 프로필에서는 비활성화 (DevTools 충돌 방지)
+@Component
+@Profile("!test") // test 프로필에서만 비활성화 (dev와 prod에서는 활성화)
 class ResponseAspect {
     companion object {
         private const val DEFAULT_STATUS_CODE = 200

@@ -47,24 +47,30 @@ class CounselorRepositoryImpl(
         return result.map { counselor ->
             if (counselor != null) {
                 // 각 상담사별 평균 평점 계산
-                val avgRating =
+                val avgRatingResult =
                     kotlinJdslJpqlExecutor.findAll {
                         select(avg(path(CounselorRating::rating)))
                             .from(entity(CounselorRating::class))
                             .where(
                                 path(CounselorRating::counselor).path(Counselor::id).eq(counselor.id),
                             )
-                    }.firstOrNull() ?: 0.0
+                    }
+
+                // null 처리 개선
+                val avgRating = avgRatingResult.firstOrNull()?.let { it as? Double } ?: 0.0
 
                 // 각 상담사별 세션 수 계산
-                val sessionCount =
+                val sessionCountResult =
                     kotlinJdslJpqlExecutor.findAll {
                         select(count(entity(ChatSession::class)))
                             .from(entity(ChatSession::class))
                             .where(
                                 path(ChatSession::counselorId).eq(counselor.id),
                             )
-                    }.firstOrNull() ?: 0L
+                    }
+
+                // null 처리 개선
+                val sessionCount = sessionCountResult.firstOrNull()?.let { it as? Long } ?: 0L
 
                 CounselorListResponse(
                     id = counselor.id,
