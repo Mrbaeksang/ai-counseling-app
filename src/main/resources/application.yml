@@ -3,10 +3,10 @@ spring:
     name: ai-counseling-app
   profiles:
     active: dev  # 기본 프로파일
-    
+
   jpa:
     open-in-view: false  # 성능 최적화
-    
+
   security:
     user:
       name: admin
@@ -22,7 +22,7 @@ management:
   endpoint:
     health:
       show-details: always
-      
+
 # 로깅 설정
 logging:
   level:
@@ -32,7 +32,7 @@ logging:
     org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    
+
 # OAuth2 설정
 oauth2:
   google:
@@ -54,8 +54,21 @@ jwt:
 openrouter:
   api-key: ${OPENROUTER_API_KEY}
   base-url: https://openrouter.ai/api/v1
-  model: meta-llama/llama-3.2-3b-instruct
+  model: google/gemini-2.5-flash-lite
+  site-url: http://localhost:8080
+  site-name: AI Counseling App
   timeout: 60
+
+# SpringDoc OpenAPI 설정
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+    filter: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
 
 # 서버 설정
 server:

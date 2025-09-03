@@ -113,7 +113,7 @@ class GetSessionMessagesApiTest
                             session = session,
                             content = "최근에 삶의 의미에 대해 고민이 많습니다.",
                             senderType = SenderType.USER,
-                            phase = CounselingPhase.ASSESSMENT_AND_CONCEPTUALIZATION,
+                            phase = CounselingPhase.EXPLORATION,
                         ),
                     ),
                     messageRepository.save(
@@ -121,7 +121,7 @@ class GetSessionMessagesApiTest
                             session = session,
                             content = "삶의 의미에 대한 고민은 인간의 본질적인 질문입니다.",
                             senderType = SenderType.AI,
-                            phase = CounselingPhase.ASSESSMENT_AND_CONCEPTUALIZATION,
+                            phase = CounselingPhase.EXPLORATION,
                         ),
                     ),
                 )

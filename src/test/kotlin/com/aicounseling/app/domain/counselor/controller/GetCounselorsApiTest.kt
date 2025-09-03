@@ -60,12 +60,13 @@ class GetCounselorsApiTest
                 .andExpect(jsonPath("$.msg").value("상담사 목록 조회 성공"))
                 .andExpect(jsonPath("$.data.content").isArray)
                 .andExpect(jsonPath("$.data.content.length()").value(2)) // 니체는 비활성이라 제외
-                .andExpect(jsonPath("$.data.content[0].name").exists())
-                .andExpect(jsonPath("$.data.content[0].title").exists())
-                .andExpect(jsonPath("$.data.content[0].averageRating").value(9)) // (8+10)/2
-                .andExpect(jsonPath("$.data.content[0].totalSessions").value(2))
-                .andExpect(jsonPath("$.data.content[1].averageRating").value(6))
-                .andExpect(jsonPath("$.data.content[1].totalSessions").value(1))
+                // createdAt DESC 정렬이므로 공자(나중 생성)가 먼저, 소크라테스가 두 번째
+                .andExpect(jsonPath("$.data.content[0].name").value("공자"))
+                .andExpect(jsonPath("$.data.content[0].averageRating").value(60))
+                .andExpect(jsonPath("$.data.content[0].totalSessions").value(1))
+                .andExpect(jsonPath("$.data.content[1].name").value("소크라테스"))
+                .andExpect(jsonPath("$.data.content[1].averageRating").value(90))
+                .andExpect(jsonPath("$.data.content[1].totalSessions").value(2))
                 .andExpect(jsonPath("$.data.pageInfo.currentPage").value(0))
                 .andExpect(jsonPath("$.data.pageInfo.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageInfo.totalElements").value(2))

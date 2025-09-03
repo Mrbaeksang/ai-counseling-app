@@ -97,7 +97,7 @@ abstract class CounselorControllerBaseTest(
                 ),
             )
 
-        // 테스트 상담사들 생성
+        // 테스트 상담사들 생성 (생성 시간 차이를 두어 순서 보장)
         testCounselor1 =
             counselorRepository.save(
                 Counselor(
@@ -109,6 +109,10 @@ abstract class CounselorControllerBaseTest(
                     isActive = true,
                 ),
             )
+
+        // 생성 시간 차이를 보장하기 위해 flush
+        counselorRepository.flush()
+        Thread.sleep(10)
 
         testCounselor2 =
             counselorRepository.save(

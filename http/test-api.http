@@ -1,0 +1,154 @@
+### AI Counseling App API 테스트
+### IntelliJ에서 직접 실행 가능한 HTTP 테스트 파일
+
+### 변수 설정
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### ============================================
+### 1. 헬스체크 - 서버 상태 확인
+### ============================================
+GET {{baseUrl}}/actuator/health
+Accept: {{contentType}}
+
+### ============================================
+### 2. 개발환경 테스트 토큰 발급 (OAuth 없이 테스트)
+### ============================================
+POST {{baseUrl}}/api/dev/auth/test-token?email=test@example.com
+Accept: {{contentType}}
+
+> {%
+    // 응답에서 토큰 추출하여 변수에 저장
+    if (response.body.resultCode === "S-1") {
+        client.global.set("authToken", response.body.data.accessToken);
+        client.global.set("userId", response.body.data.userId);
+        client.log("✅ 토큰 발급 성공!");
+        client.log("Access Token: " + response.body.data.accessToken);
+        client.log("User ID: " + response.body.data.userId);
+    }
+%}
+
+### ============================================
+### 3. 테스트 사용자 목록 조회
+### ============================================
+GET {{baseUrl}}/api/dev/auth/test-users
+Accept: {{contentType}}
+
+### ============================================
+### 4. 상담사 목록 조회
+### ============================================
+GET {{baseUrl}}/api/counselors
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### ============================================
+### 5. 특정 상담사 정보 조회 (소크라테스)
+### ============================================
+GET {{baseUrl}}/api/counselors/1
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### ============================================
+### 6. 새 상담 세션 시작
+### ============================================
+POST {{baseUrl}}/api/sessions
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "counselorId": 1,
+  "initialMessage": "안녕하세요, 소크라테스님. 인생의 의미에 대해 고민이 많습니다."
+}
+
+> {%
+    if (response.body.resultCode === "S-1") {
+        client.global.set("sessionId", response.body.data.sessionId);
+        client.log("✅ 세션 생성 성공!");
+        client.log("Session ID: " + response.body.data.sessionId);
+    }
+%}
+
+### ============================================
+### 7. 세션에 메시지 전송
+### ============================================
+POST {{baseUrl}}/api/sessions/{{sessionId}}/messages
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "message": "행복한 삶이란 무엇일까요?"
+}
+
+### ============================================
+### 8. 내 세션 목록 조회
+### ============================================
+GET {{baseUrl}}/api/sessions?page=0&size=10
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### ============================================
+### 9. 특정 세션 상세 조회
+### ============================================
+GET {{baseUrl}}/api/sessions/{{sessionId}}
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### ============================================
+### 10. 세션 북마크 토글
+### ============================================
+POST {{baseUrl}}/api/sessions/{{sessionId}}/bookmark
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+### ============================================
+### 11. 세션 평가하기
+### ============================================
+POST {{baseUrl}}/api/sessions/{{sessionId}}/rate
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "rating": 5,
+  "feedback": "매우 유익한 대화였습니다."
+}
+
+### ============================================
+### 12. Swagger UI 접속 (브라우저에서 열기)
+### ============================================
+# http://localhost:8080/swagger-ui/index.html
+
+### ============================================
+### 프로덕션 환경 테스트용 OAuth 로그인
+### ============================================
+
+### Google OAuth 로그인
+POST {{baseUrl}}/api/auth/google
+Content-Type: {{contentType}}
+
+{
+  "idToken": "your-google-id-token-here"
+}
+
+### Kakao OAuth 로그인
+POST {{baseUrl}}/api/auth/kakao
+Content-Type: {{contentType}}
+
+{
+  "accessToken": "your-kakao-access-token-here"
+}
+
+### Naver OAuth 로그인  
+POST {{baseUrl}}/api/auth/naver
+Content-Type: {{contentType}}
+
+{
+  "accessToken": "your-naver-access-token-here"
+}
+
+### 토큰 갱신
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "your-refresh-token-here"
+}

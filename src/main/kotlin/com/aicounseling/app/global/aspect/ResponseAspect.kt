@@ -13,7 +13,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Aspect
 @Component
-@Profile("!test") // test 프로필에서는 비활성화
+@Profile("!test") // test 프로필에서만 비활성화 (dev와 prod에서는 활성화)
 class ResponseAspect {
     companion object {
         private const val DEFAULT_STATUS_CODE = 200
