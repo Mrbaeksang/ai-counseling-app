@@ -31,6 +31,20 @@ object AppConstants {
         const val MAX_CONVERSATION_HISTORY = 9
         const val TITLE_MAX_LENGTH = 15
         const val DEFAULT_SESSION_TITLE = "새 상담"
+
+        // 상담 단계 진행 기준 (메시지 수)
+        const val PHASE_ENGAGEMENT_MAX = 4L
+        const val PHASE_EXPLORATION_START = 10L
+        const val PHASE_EXPLORATION_DEEP = 20L
+        const val PHASE_INSIGHT_START = 30L
+        const val PHASE_ACTION_START = 40L
+
+        // AI 응답 관련
+        const val AI_RETRY_MAX_COUNT = 3
+        const val AI_RETRY_DELAY_BASE = 1000L
+        const val AI_RESPONSE_MIN_LENGTH = 10
+        const val TITLE_PARSE_MAX_LENGTH = 15
+        const val LOG_PREVIEW_LENGTH = 100
     }
 
     object Rating {

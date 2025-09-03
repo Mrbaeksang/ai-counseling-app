@@ -13,7 +13,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Aspect
 @Component
-@Profile("!test") // test 프로필에서만 비활성화 (dev와 prod에서는 활성화)
+@Profile("!test & !dev") // test와 dev 프로필에서 비활성화 (prod에서만 활성화)
 class ResponseAspect {
     companion object {
         private const val DEFAULT_STATUS_CODE = 200
@@ -39,8 +39,8 @@ class ResponseAspect {
 
     @Around(
         "@within(org.springframework.web.bind.annotation.RestController) && " +
-            "(execution(* com.aicounseling.app.domain..*Controller.*(..)) || " +
-            "execution(* com.aicounseling.app.global.auth.controller.*Controller.*(..)))",
+            "execution(* com.aicounseling.app..*.*(..)) && " +
+            "!execution(* com.aicounseling.app.global.auth.controller.DevAuthController.*(..))",
     )
     fun handleResponse(joinPoint: ProceedingJoinPoint): Any? {
         val result = joinPoint.proceed()
