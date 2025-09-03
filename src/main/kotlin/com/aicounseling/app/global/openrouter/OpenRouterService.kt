@@ -43,52 +43,10 @@ class OpenRouterService(
         userMessage: String,
         counselorPrompt: String,
         conversationHistory: List<Message> = emptyList(),
-        includeTitle: Boolean = false,
+        @Suppress("UnusedParameter") includeTitle: Boolean = false,
     ): String {
-        val responseFormat =
-            if (includeTitle) {
-                """
-            반드시 아래 형식으로만 응답하세요 (JSON 금지!):
-            
-            [응답 내용]
-            (여기에 사용자에게 전달할 상담 내용을 작성하세요. 공감적이고 따뜻하게)
-            
-            [현재 단계]  
-            (ENGAGEMENT, EXPLORATION, INSIGHT, ACTION, CLOSING 중 하나만)
-            
-            [세션 제목]
-            (대화를 요약한 15자 이내 제목)
-            """
-            } else {
-                """
-            반드시 아래 형식으로만 응답하세요 (JSON 금지!):
-            
-            [응답 내용]
-            (여기에 사용자에게 전달할 상담 내용을 작성하세요. 공감적이고 따뜻하게)
-            
-            [현재 단계]
-            (ENGAGEMENT, EXPLORATION, INSIGHT, ACTION, CLOSING 중 하나만)
-            """
-            }
-
-        val enhancedPrompt =
-            """
-            $counselorPrompt
-
-            === 중요한 응답 규칙 ===
-            1. 절대 JSON 형식으로 응답하지 마세요
-            2. 아래 형식을 정확히 따라주세요
-            3. [응답 내용], [현재 단계] 라벨을 반드시 포함하세요
-            
-            $responseFormat
-            
-            예시:
-            [응답 내용]
-            안녕하세요. 오늘 어떤 마음으로 찾아오셨나요?
-            
-            [현재 단계]
-            ENGAGEMENT
-            """.trimIndent()
+        // ChatSessionService에서 이미 형식을 정의했으므로 그대로 사용
+        val enhancedPrompt = counselorPrompt
 
         val messages =
             buildList {
