@@ -379,7 +379,8 @@ class ChatSessionService(
                 "- ${phase.name}(${phase.koreanName}): ${phase.description}"
             }
 
-        val basePrompt = """
+        val basePrompt =
+            """
             |${counselor.basePrompt}
             |
             |상담 단계 안내:

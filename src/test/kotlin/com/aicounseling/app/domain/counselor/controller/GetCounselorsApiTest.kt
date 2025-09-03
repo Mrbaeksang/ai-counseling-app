@@ -62,9 +62,9 @@ class GetCounselorsApiTest
                 .andExpect(jsonPath("$.data.content.length()").value(2)) // 니체는 비활성이라 제외
                 .andExpect(jsonPath("$.data.content[0].name").exists())
                 .andExpect(jsonPath("$.data.content[0].title").exists())
-                .andExpect(jsonPath("$.data.content[0].averageRating").value(9)) // (8+10)/2
+                .andExpect(jsonPath("$.data.content[0].averageRating").value(90)) // (8+10)/2 * 10
                 .andExpect(jsonPath("$.data.content[0].totalSessions").value(2))
-                .andExpect(jsonPath("$.data.content[1].averageRating").value(6))
+                .andExpect(jsonPath("$.data.content[1].averageRating").value(60))
                 .andExpect(jsonPath("$.data.content[1].totalSessions").value(1))
                 .andExpect(jsonPath("$.data.pageInfo.currentPage").value(0))
                 .andExpect(jsonPath("$.data.pageInfo.pageSize").value(20))

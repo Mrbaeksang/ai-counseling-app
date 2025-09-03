@@ -64,7 +64,7 @@ class GetCounselorDetailApiTest
                 .andExpect(jsonPath("$.data.description").value("대화법과 산파술의 창시자"))
                 .andExpect(jsonPath("$.data.avatarUrl").value("https://example.com/socrates.jpg"))
                 .andExpect(jsonPath("$.data.totalRatings").value(2))
-                .andExpect(jsonPath("$.data.averageRating").value(9))
+                .andExpect(jsonPath("$.data.averageRating").value(90))
                 .andExpect(jsonPath("$.data.totalSessions").value(2))
                 .andExpect(jsonPath("$.data.isFavorite").value(true))
         }
