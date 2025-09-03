@@ -7,7 +7,6 @@ import com.aicounseling.app.global.rsData.RsData
 import com.aicounseling.app.global.security.AuthProvider
 import com.aicounseling.app.global.security.JwtTokenProvider
 import org.springframework.context.annotation.Profile
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,7 +31,7 @@ class DevAuthController(
     @PostMapping("/test-token")
     fun getTestToken(
         @RequestParam(defaultValue = "test@example.com") email: String,
-    ): ResponseEntity<RsData<AuthResponse>> {
+    ): RsData<AuthResponse> {
         // 테스트 사용자 찾기 - providerId를 email 기반으로 생성
         val testProviderId = "test-${email.substringBefore("@")}"
         val user =
@@ -64,17 +63,15 @@ class DevAuthController(
             )
         val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
 
-        return ResponseEntity.ok(
-            RsData.of(
-                "S-1",
-                "테스트용 토큰이 발급되었습니다.",
-                AuthResponse(
-                    accessToken = accessToken,
-                    refreshToken = refreshToken,
-                    userId = user.id,
-                    email = user.email,
-                    nickname = user.nickname,
-                ),
+        return RsData.of(
+            "S-1",
+            "테스트용 토큰이 발급되었습니다.",
+            AuthResponse(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                userId = user.id,
+                email = user.email,
+                nickname = user.nickname,
             ),
         )
     }
@@ -83,7 +80,7 @@ class DevAuthController(
      * 사용 가능한 테스트 사용자 목록 조회
      */
     @GetMapping("/test-users")
-    fun getTestUsers(): ResponseEntity<RsData<List<Map<String, Any?>>>> {
+    fun getTestUsers(): RsData<List<Map<String, Any?>>> {
         // InitDataConfig에서 생성한 테스트 사용자들 조회
         val users = mutableListOf<Map<String, Any?>>()
 
@@ -123,12 +120,10 @@ class DevAuthController(
             )
         }
 
-        return ResponseEntity.ok(
-            RsData.of(
-                "S-1",
-                "테스트 사용자 목록",
-                users,
-            ),
+        return RsData.of(
+            "S-1",
+            "테스트 사용자 목록",
+            users,
         )
     }
 }
