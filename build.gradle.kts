@@ -57,7 +57,7 @@ dependencies {
     implementation("com.linecorp.kotlin-jdsl:spring-data-jpa-support:3.5.5")
 
     // API Documentation (Swagger)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 
     // .env 파일 지원
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
@@ -102,6 +102,23 @@ tasks.withType<Test> {
         // agent 사용 추적 비활성화
         "-Djdk.instrument.traceUsage=false",
     )
+}
+
+// bootRun 태스크에 UTF-8 인코딩 설정
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs =
+        listOf(
+            "-Dfile.encoding=UTF-8",
+            "-Dconsole.encoding=UTF-8",
+            "-Duser.language=ko",
+            "-Duser.country=KR",
+            "-Dsun.stdout.encoding=UTF-8",
+            "-Dsun.stderr.encoding=UTF-8",
+            "-Dspring.output.ansi.enabled=ALWAYS",
+        )
+    systemProperty("file.encoding", "UTF-8")
+    systemProperty("console.encoding", "UTF-8")
+    environment("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8")
 }
 
 // Ktlint 설정

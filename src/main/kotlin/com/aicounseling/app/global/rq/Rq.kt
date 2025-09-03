@@ -1,12 +1,14 @@
 package com.aicounseling.app.global.rq
 
 import com.aicounseling.app.domain.user.entity.User
+import org.springframework.context.annotation.Scope
+import org.springframework.context.annotation.ScopedProxyMode
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
-import org.springframework.web.context.annotation.RequestScope
+import org.springframework.web.context.WebApplicationContext
 
 @Component
-@RequestScope
+@Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.TARGET_CLASS)
 class Rq {
     val authentication
         get() = SecurityContextHolder.getContext().authentication

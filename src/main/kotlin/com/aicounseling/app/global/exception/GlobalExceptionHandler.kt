@@ -1,6 +1,7 @@
 package com.aicounseling.app.global.exception
 
 import com.aicounseling.app.global.rsData.RsData
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): RsData<Map<String, String>> {
         val errors =
@@ -35,9 +38,8 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception::class)
-    fun handleException(
-        @Suppress("UNUSED_PARAMETER") e: Exception,
-    ): RsData<Nothing> {
+    fun handleException(e: Exception): RsData<Nothing> {
+        logger.error("Unhandled exception occurred", e)
         return RsData("F-500", "서버 오류가 발생했습니다")
     }
 }

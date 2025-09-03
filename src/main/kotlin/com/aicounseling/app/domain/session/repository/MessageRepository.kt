@@ -22,4 +22,8 @@ interface MessageRepository : JpaRepository<Message, Long> {
         sessionId: Long,
         senderType: SenderType,
     ): Message?
+
+    fun findBySessionIdOrderByCreatedAtDesc(sessionId: Long): List<Message>
+
+    fun findTopBySessionIdOrderByCreatedAtDesc(sessionId: Long): Message?
 }

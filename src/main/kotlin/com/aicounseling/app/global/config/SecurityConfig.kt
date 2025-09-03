@@ -4,6 +4,7 @@ import com.aicounseling.app.global.security.JwtAuthenticationFilter
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -31,11 +32,17 @@ class SecurityConfig(
                 auth
                     // Public endpoints
                     .requestMatchers("/actuator/health").permitAll()
+                    // SpringDoc/Swagger endpoints
+                    .requestMatchers("/v3/api-docs/**").permitAll()
+                    .requestMatchers("/swagger-ui/**").permitAll()
+                    .requestMatchers("/swagger-ui.html").permitAll()
                     .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/dev/auth/**").permitAll() // 개발 환경 테스트용 인증
+                    .requestMatchers("/api/health/**").permitAll() // 헬스체크 엔드포인트
                     .requestMatchers("/h2-console/**").permitAll()
                     // Public counselor endpoints (목록, 상세 조회는 인증 불필요)
-                    .requestMatchers("GET", "/api/counselors").permitAll()
-                    .requestMatchers("GET", "/api/counselors/*").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/counselors").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/counselors/*").permitAll()
                     // Protected endpoints (나머지 /api/** 는 인증 필요)
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()

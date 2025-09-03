@@ -1,6 +1,7 @@
 package com.aicounseling.app.domain.session.service
 
 import com.aicounseling.app.domain.counselor.dto.RateSessionRequest
+import com.aicounseling.app.domain.counselor.entity.Counselor
 import com.aicounseling.app.domain.counselor.service.CounselorService
 import com.aicounseling.app.domain.session.dto.CreateSessionResponse
 import com.aicounseling.app.domain.session.dto.MessageItem
@@ -16,6 +17,7 @@ import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.rsData.RsData
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -37,6 +39,11 @@ class ChatSessionService(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(ChatSessionService::class.java)
+        private const val AI_RETRY_MAX_COUNT = 3
+        private const val AI_RETRY_DELAY_BASE = 1000L
+        private const val AI_RESPONSE_MIN_LENGTH = 10
+        private const val TITLE_PARSE_MAX_LENGTH = 15
+        private const val DEBUG_LOG_MAX_LENGTH = 200
     }
 
     /**
@@ -249,23 +256,59 @@ class ChatSessionService(
         check(content.isNotBlank()) { "메시지 내용을 입력해주세요" }
 
         val session = getSession(sessionId, userId)
-
         check(session.closedAt == null) { AppConstants.ErrorMessages.SESSION_ALREADY_CLOSED }
 
-        // 1. 첫 메시지 여부 확인
+        // 1. 사용자 메시지 저장
         val isFirstMessage = messageRepository.countBySessionId(sessionId) == 0L
+        val userMessage = saveUserMessage(session, content, isFirstMessage)
 
-        // 2. 사용자 메시지 phase 결정: 첫 메시지면 ENGAGEMENT, 아니면 마지막 AI 메시지의 phase 따라감
+        // 2. AI 응답 생성
+        val counselor =
+            counselorService.findById(session.counselorId)
+                ?: error("상담사를 찾을 수 없습니다: ${session.counselorId}")
+
+        val aiResponse =
+            try {
+                generateAiResponse(
+                    session = session,
+                    counselor = counselor,
+                    userMessage = content,
+                    isFirstMessage = isFirstMessage,
+                )
+            } catch (e: IOException) {
+                // AI 응답 실패 시 에러 메시지 반환
+                logger.error("AI 응답 생성 실패: {}", e.message, e)
+                val errorMessage = createErrorMessage(session, userMessage.phase)
+                return Triple(userMessage, errorMessage, session)
+            }
+
+        // 3. 응답 처리 및 저장
+        return processAiResponse(
+            session = session,
+            userMessage = userMessage,
+            aiResponse = aiResponse,
+            isFirstMessage = isFirstMessage,
+        )
+    }
+
+    /**
+     * 사용자 메시지 저장
+     */
+    private fun saveUserMessage(
+        session: ChatSession,
+        content: String,
+        isFirstMessage: Boolean,
+    ): Message {
         val userPhase =
             if (isFirstMessage) {
                 CounselingPhase.ENGAGEMENT
             } else {
-                // 마지막 AI 메시지의 phase를 가져와서 사용자 메시지도 같은 단계로 설정
-                messageRepository.findTopBySessionIdAndSenderTypeOrderByCreatedAtDesc(sessionId, SenderType.AI)?.phase
-                    ?: CounselingPhase.ENGAGEMENT
+                messageRepository.findTopBySessionIdAndSenderTypeOrderByCreatedAtDesc(
+                    session.id,
+                    SenderType.AI,
+                )?.phase ?: CounselingPhase.ENGAGEMENT
             }
 
-        // 3. 사용자 메시지 저장 (일단 ENGAGEMENT로 저장)
         val userMessage =
             Message(
                 session = session,
@@ -273,80 +316,175 @@ class ChatSessionService(
                 content = content,
                 phase = userPhase,
             )
-        val savedUserMessage = messageRepository.save(userMessage)
+        return messageRepository.save(userMessage)
+    }
 
-        // 4. 상담사 정보 조회
-        val counselor =
-            counselorService.findById(session.counselorId)
-                ?: error("상담사를 찾을 수 없습니다: ${session.counselorId}")
+    /**
+     * AI 응답 생성
+     */
+    private fun generateAiResponse(
+        session: ChatSession,
+        counselor: Counselor,
+        userMessage: String,
+        isFirstMessage: Boolean,
+    ): String {
+        // 대화 히스토리 구성
+        val history = buildConversationHistory(session.id)
 
-        // 5. 대화 히스토리 구성 (모든 메시지에 phase 정보 포함)
-        val history =
-            messageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)
-                .dropLast(1) // 방금 저장한 사용자 메시지 제외
-                .takeLast(AppConstants.Session.MAX_CONVERSATION_HISTORY)
-                .map { message ->
-                    com.aicounseling.app.global.openrouter.Message(
-                        role = if (message.senderType == SenderType.USER) "user" else "assistant",
-                        content = "${message.content} [단계: ${message.phase.koreanName}]",
-                    )
-                }
+        // 프롬프트 구성
+        val systemPrompt = buildSystemPrompt(counselor, isFirstMessage)
 
-        // 6. AI 프롬프트 구성 (모든 가능한 단계와 현재 상황 판단 요청)
+        // AI 응답 요청 (재시도 로직 포함)
+        return try {
+            requestAiResponseWithRetry(
+                sessionId = session.id,
+                userMessage = userMessage,
+                systemPrompt = systemPrompt,
+                history = history,
+                isFirstMessage = isFirstMessage,
+            )
+        } catch (e: IOException) {
+            // 에러 발생 시 처리
+            handleAiResponseError(session, userMessage, isFirstMessage)
+            // 에러 로그만 남기고 재throw (sendMessage에서 처리)
+            logger.error("AI 응답 생성 실패", e)
+            throw e
+        }
+    }
+
+    /**
+     * 대화 히스토리 구성
+     */
+    private fun buildConversationHistory(sessionId: Long): List<com.aicounseling.app.global.openrouter.Message> {
+        return messageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)
+            .dropLast(1) // 방금 저장한 사용자 메시지 제외
+            .takeLast(AppConstants.Session.MAX_CONVERSATION_HISTORY)
+            .map { message ->
+                com.aicounseling.app.global.openrouter.Message(
+                    role = if (message.senderType == SenderType.USER) "user" else "assistant",
+                    content = "${message.content} [단계: ${message.phase.koreanName}]",
+                )
+            }
+    }
+
+    /**
+     * 시스템 프롬프트 구성
+     */
+    private fun buildSystemPrompt(
+        counselor: Counselor,
+        isFirstMessage: Boolean,
+    ): String {
         val phaseOptions =
-            CounselingPhase.entries.joinToString("\n") {
-                "- ${it.name}(${it.koreanName}): ${it.description}"
+            CounselingPhase.entries.joinToString("\n") { phase ->
+                "- ${phase.name}(${phase.koreanName}): ${phase.description}"
             }
 
-        val systemPrompt =
-            """
-            ${counselor.basePrompt}
+        return """
+${counselor.basePrompt}
 
-            상담 단계 안내:
-            $phaseOptions
+상담 단계 안내:
+$phaseOptions
 
-            위 대화 히스토리와 사용자의 현재 메시지를 보고, 이 상황에 가장 적합한 상담 단계를 판단해주세요.
-            단계를 무조건 높일 필요는 없고, 현재 상황에 맞는 단계를 선택하세요.
+단계 전환 기준:
+- ENGAGEMENT: 첫 인사, 내담자의 기분 확인, 편안한 분위기 조성 및 상담 목표 설정
+- EXPLORATION: 내담자의 고민, 감정, 구체적인 경험과 배경을 깊이 있게 탐색할 때
+- INSIGHT: 내담자가 자신의 문제 패턴을 발견하고, 새로운 관점을 얻거나 자기 이해를 심화할 때
+- ACTION: 내담자가 문제 해결을 위한 구체적인 실천 방안이나 작은 변화를 계획할 때
+- CLOSING: 상담 내용을 정리하고, 긍정적인 메시지로 마무리하며 다음 단계를 기대할 때
 
-            응답 형식 (반드시 JSON으로):
-            {
-                "content": "사용자에게 전달할 상담 응답",
-                "currentPhase": "이 대화에 적합한 현재 단계 ENUM 이름 (예: ENGAGEMENT, ASSESSMENT_AND_CONCEPTUALIZATION 등)"
-                ${if (isFirstMessage) """, "sessionTitle": "이 대화를 요약한 15자 이내 제목"""" else ""}
-            }
-            """.trimIndent()
+현재 대화의 흐름과 내용의 깊이를 고려하여 가장 적절한 단계를 정확히 선택하고 [현재 단계]에 해당 ENUM 이름만 작성하세요.
+**내담자의 대화 내용 변화에 따라 상담 단계를 적극적으로 전환하세요.**
 
-        // 7. AI 응답 요청
-        val aiResponseRaw =
-            try {
-                runBlocking {
-                    openRouterService.sendCounselingMessage(
-                        userMessage = content,
-                        counselorPrompt = systemPrompt,
-                        conversationHistory = history,
-                        includeTitle = isFirstMessage,
-                    )
+응답 형식 (아래 형식을 정확히 따라주세요):
+[응답 내용]
+(여기에 사용자에게 전달할 상담 응답을 작성하세요)
+
+[현재 단계]
+(여기에 현재 적합한 단계의 ENUM 이름만 작성. 예: ENGAGEMENT 또는 EXPLORATION)
+${if (isFirstMessage) {
+"""
+
+[세션 제목]
+(여기에 대화를 요약한 15자 이내 제목 작성)"""
+} else {
+    ""
+}}
+        """.trimIndent()
+    }
+
+    /**
+     * AI 응답 요청 (재시도 로직 포함)
+     */
+    private fun requestAiResponseWithRetry(
+        sessionId: Long,
+        userMessage: String,
+        systemPrompt: String,
+        history: List<com.aicounseling.app.global.openrouter.Message>,
+        isFirstMessage: Boolean,
+    ): String {
+        return try {
+            runBlocking {
+                var retryCount = 0
+
+                while (retryCount < AI_RETRY_MAX_COUNT) {
+                    val response =
+                        openRouterService.sendCounselingMessage(
+                            userMessage = userMessage,
+                            counselorPrompt = systemPrompt,
+                            conversationHistory = history,
+                            includeTitle = isFirstMessage,
+                        )
+
+                    // 응답이 유효하면 반환
+                    if (response.isNotBlank() && response.length > AI_RESPONSE_MIN_LENGTH) {
+                        return@runBlocking response
+                    }
+
+                    retryCount++
+                    if (retryCount < AI_RETRY_MAX_COUNT) {
+                        logger.warn(
+                            "빈 AI 응답 수신, 재시도 {}/{} - sessionId: {}",
+                            retryCount,
+                            AI_RETRY_MAX_COUNT,
+                            sessionId,
+                        )
+                        delay(AI_RETRY_DELAY_BASE * retryCount)
+                    }
                 }
-            } catch (e: IOException) {
-                // 에러 발생 시 로깅 및 처리
-                logger.error("AI 응답 요청 실패 - sessionId: {}, error: {}", sessionId, e.message, e)
-                handleAiResponseError(session, content, isFirstMessage)
-                val errorMessage = createErrorMessage(session, userPhase)
-                return Triple(savedUserMessage, errorMessage, session)
+
+                // 모든 재시도 실패 시
+                logger.error("AI 응답 실패 ({}회 재시도 후) - sessionId: {}", AI_RETRY_MAX_COUNT, sessionId)
+                throw IOException("AI 응답을 받을 수 없습니다")
             }
+        } catch (e: IOException) {
+            logger.error("AI 응답 요청 실패 - sessionId: {}, error: {}", sessionId, e.message, e)
+            throw e
+        }
+    }
 
-        // 8. AI 응답 파싱
-        val (responseContent, currentPhase, sessionTitle) = parseAiResponse(aiResponseRaw, isFirstMessage)
+    /**
+     * AI 응답 처리 및 저장
+     */
+    private fun processAiResponse(
+        session: ChatSession,
+        userMessage: Message,
+        aiResponse: String,
+        isFirstMessage: Boolean,
+    ): Triple<Message, Message, ChatSession> {
+        // AI 응답 파싱
+        logger.info("AI 원본 응답 (sessionId: {}): {}", session.id, aiResponse)
+        val (responseContent, currentPhase, sessionTitle) = parseAiResponse(aiResponse, isFirstMessage)
+        logger.info("파싱 결과 - 단계: {}, 제목: {}, 내용 길이: {}", currentPhase, sessionTitle, responseContent.length)
 
-        // 9. 첫 메시지일 경우 세션 제목 설정
+        // 첫 메시지일 경우 세션 제목 설정
         if (isFirstMessage) {
             session.title = sessionTitle?.take(AppConstants.Session.TITLE_MAX_LENGTH)?.trim()
-                ?: content.take(AppConstants.Session.TITLE_MAX_LENGTH).trim().ifEmpty {
+                ?: userMessage.content.take(AppConstants.Session.TITLE_MAX_LENGTH).trim().ifEmpty {
                     AppConstants.Session.DEFAULT_SESSION_TITLE
                 }
         }
 
-        // 10. AI 메시지 저장 (AI가 판단한 currentPhase로)
+        // AI 메시지 저장
         val aiMessage =
             Message(
                 session = session,
@@ -356,34 +494,122 @@ class ChatSessionService(
             )
         messageRepository.save(aiMessage)
 
-        // 11. 세션 정보 업데이트
+        // 세션 정보 업데이트
         session.lastMessageAt = LocalDateTime.now()
         val updatedSession = sessionRepository.save(session)
 
-        return Triple(savedUserMessage, aiMessage, updatedSession)
+        return Triple(userMessage, aiMessage, updatedSession)
     }
 
-    /**
-     * AI 응답 JSON 파싱
-     * @param rawResponse AI로부터 받은 원본 응답 문자열
-     * @param expectTitle 세션 제목 포함 여부 (첫 메시지인 경우 true)
-     * @return (응답 내용, 상담 단계, 세션 제목?)
-     */
     private fun parseAiResponse(
         rawResponse: String,
         expectTitle: Boolean = false,
     ): Triple<String, CounselingPhase, String?> {
+        logger.debug("AI 원본 응답: {}", rawResponse.take(DEBUG_LOG_MAX_LENGTH))
+
+        // 응답이 비어있는 경우
+        if (rawResponse.isBlank()) {
+            logger.error("AI 응답이 비어있음")
+            return Triple("죄송합니다. 다시 말씀해 주시겠어요?", CounselingPhase.ENGAGEMENT, null)
+        }
+
+        // 구조화된 텍스트 형식 파싱 시도
+        return if (rawResponse.contains("[응답 내용]") && rawResponse.contains("[현재 단계]")) {
+            parseStructuredResponse(rawResponse, expectTitle)
+        } else {
+            // JSON 형식 파싱 (폴백) - 하위 호환성
+            parseJsonResponse(rawResponse, expectTitle)
+        }
+    }
+
+    /**
+     * 구조화된 텍스트 형식 파싱
+     */
+    private fun parseStructuredResponse(
+        rawResponse: String,
+        expectTitle: Boolean,
+    ): Triple<String, CounselingPhase, String?> {
         return try {
-            val jsonNode = objectMapper.readTree(rawResponse)
+            // 1. 응답 내용 추출
+            val contentPattern =
+                Regex(
+                    """[응답 내용].*?
+?(.*?)(?=[현재 단계]|[세션 제목]|$)""",
+                    setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE),
+                )
+            val content =
+                contentPattern.find(rawResponse)?.groups?.get(1)?.value?.trim()
+                    ?: throw IllegalArgumentException("응답 내용을 찾을 수 없음")
+
+            // 2. 현재 단계 추출
+            val phasePattern =
+                Regex(
+                    """[현재 단계].*?
+?([A-Z_]+)""",
+                    RegexOption.MULTILINE,
+                )
+            val phaseString = phasePattern.find(rawResponse)?.groups?.get(1)?.value?.trim()?.uppercase()
+
+            val currentPhase =
+                try {
+                    CounselingPhase.valueOf(phaseString ?: "ENGAGEMENT")
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("알 수 없는 단계: {}, 기본값 사용 - error: {}", phaseString, e.message)
+                    CounselingPhase.ENGAGEMENT
+                }
+
+            // 3. 세션 제목 추출 (첫 메시지인 경우만)
+            val title =
+                if (expectTitle) {
+                    extractSessionTitle(rawResponse)
+                } else {
+                    null
+                }
+
+            logger.info("파싱 성공 - 단계: {}, 제목: {}", currentPhase, title)
+            Triple(content, currentPhase, title)
+        } catch (e: IllegalArgumentException) {
+            logger.error("구조화된 텍스트 파싱 실패: {}", e.message)
+            parseFallbackResponse(rawResponse)
+        }
+    }
+
+    /**
+     * 세션 제목 추출
+     */
+    private fun extractSessionTitle(rawResponse: String): String? {
+        val titlePattern =
+            Regex(
+                """[세션 제목].*?
+?(.+?)(?:
+|$)""",
+                RegexOption.MULTILINE,
+            )
+        return titlePattern.find(rawResponse)?.groups?.get(1)?.value?.trim()?.take(TITLE_PARSE_MAX_LENGTH)
+    }
+
+    /**
+     * JSON 형식 파싱 (하위 호환성)
+     */
+    private fun parseJsonResponse(
+        rawResponse: String,
+        expectTitle: Boolean,
+    ): Triple<String, CounselingPhase, String?> {
+        val cleanedResponse =
+            rawResponse
+                .replace(Regex("""^```json.*""", RegexOption.MULTILINE), "")
+                .replace(Regex("""```.*$""", RegexOption.MULTILINE), "")
+                .trim()
+
+        return try {
+            val jsonNode = objectMapper.readTree(cleanedResponse)
             val content = jsonNode.get("content")?.asText() ?: rawResponse
 
-            // AI가 판단한 현재 적절한 단계 파싱
             val currentPhaseString = jsonNode.get("currentPhase")?.asText() ?: "ENGAGEMENT"
             val currentPhase =
                 try {
                     CounselingPhase.valueOf(currentPhaseString)
                 } catch (e: IllegalArgumentException) {
-                    // 예외 처리: 잘못된 단계명은 기본값으로 처리
                     logger.warn(
                         "잘못된 상담 단계명 수신: {}, 기본값(ENGAGEMENT) 사용 - error: {}",
                         currentPhaseString,
@@ -399,12 +625,25 @@ class ChatSessionService(
                     null
                 }
 
+            logger.debug("JSON 파싱 - 단계: {}, 제목: {}", currentPhase, title)
             Triple(content, currentPhase, title)
         } catch (e: JsonProcessingException) {
-            // JSON 파싱 실패시 기본값들로 처리
-            logger.error("AI 응답 JSON 파싱 실패: {}", e.message, e)
-            Triple(rawResponse, CounselingPhase.ENGAGEMENT, null)
+            logger.error("JSON 파싱 실패: {}", e.message)
+            parseFallbackResponse(cleanedResponse)
         }
+    }
+
+    /**
+     * 파싱 실패 시 폴백 응답
+     */
+    private fun parseFallbackResponse(rawResponse: String): Triple<String, CounselingPhase, String?> {
+        val fallbackContent =
+            rawResponse
+                .replace(Regex("""\{.*?\}""", RegexOption.DOT_MATCHES_ALL), "")
+                .replace(Regex("""\[.*?\]"""), "")
+                .trim()
+                .ifEmpty { "죄송합니다. 다시 한 번 말씀해 주시겠어요?" }
+        return Triple(fallbackContent, CounselingPhase.ENGAGEMENT, null)
     }
 
     /**
