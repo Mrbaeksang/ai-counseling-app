@@ -402,7 +402,7 @@ class ChatSessionService(
             |
             |[현재 단계]
             |(여기에 현재 적합한 단계의 ENUM 이름만 작성. 예: ENGAGEMENT 또는 EXPLORATION)
-        """.trimMargin()
+            """.trimMargin()
 
         return if (isFirstMessage) {
             "$basePrompt\n\n[세션 제목]\n(여기에 대화를 요약한 15자 이내 제목 작성)"

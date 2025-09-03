@@ -46,15 +46,35 @@ class CounselorRepositoryImpl(
         // DTO로 변환 (nullable 처리 필요)
         return result.map { counselor ->
             if (counselor != null) {
+                // 각 상담사별 평균 평점 계산
+                val avgRating =
+                    kotlinJdslJpqlExecutor.findAll {
+                        select(avg(path(CounselorRating::rating)))
+                            .from(entity(CounselorRating::class))
+                            .where(
+                                path(CounselorRating::counselor).path(Counselor::id).eq(counselor.id),
+                            )
+                    }.firstOrNull() ?: 0.0
+
+                // 각 상담사별 세션 수 계산
+                val sessionCount =
+                    kotlinJdslJpqlExecutor.findAll {
+                        select(count(entity(ChatSession::class)))
+                            .from(entity(ChatSession::class))
+                            .where(
+                                path(ChatSession::counselorId).eq(counselor.id),
+                            )
+                    }.firstOrNull() ?: 0L
+
                 CounselorListResponse(
                     id = counselor.id,
                     name = counselor.name,
                     title = counselor.title,
                     avatarUrl = counselor.avatarUrl,
-                    // Int 타입으로 수정
-                    averageRating = 0,
-                    // Int 타입으로 수정
-                    totalSessions = 0,
+                    // 평점을 Int로 변환 (소수점 첫째 자리까지 표현)
+                    // 예: 4.3 → 43 (UI에서 4.3으로 표시)
+                    averageRating = (avgRating * 10).roundToInt(),
+                    totalSessions = sessionCount.toInt(),
                 )
             } else {
                 // null인 경우 기본값으로 처리 (실제로는 발생하지 않아야 함)
