@@ -369,7 +369,7 @@ class ChatSessionService(
     ): Pair<Message, ChatSession> {
         val sessionId = session.id
         val messageCount = messageRepository.countBySessionId(sessionId)
-        
+
         // userMessage 파라미터 사용 (Detekt UnusedParameter 해결)
         logger.debug("사용자 메시지 저장 - sessionId: {}, messageId: {}", sessionId, userMessage.id)
 
@@ -638,22 +638,24 @@ class ChatSessionService(
     private fun parseJsonResponse(
         cleanedResponse: String,
         expectTitle: Boolean,
-        rawResponse: String
+        rawResponse: String,
     ): ParsedResponse {
         return try {
             val jsonNode = objectMapper.readTree(cleanedResponse)
-            
-            val content = jsonNode.get("content")?.asText()
-                ?: return parseFallbackResponse(rawResponse)
-            
+
+            val content =
+                jsonNode.get("content")?.asText()
+                    ?: return parseFallbackResponse(rawResponse)
+
             val phase = parsePhaseFromJson(jsonNode)
-            
-            val title = if (expectTitle) {
-                jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_MAX_LENGTH)
-            } else {
-                null
-            }
-            
+
+            val title =
+                if (expectTitle) {
+                    jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_MAX_LENGTH)
+                } else {
+                    null
+                }
+
             ParsedResponse(content, phase, title)
         } catch (e: JsonProcessingException) {
             logger.error("JSON 파싱 실패: {}", e.message)
