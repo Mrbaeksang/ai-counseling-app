@@ -111,5 +111,7 @@ object AppConstants {
         const val SESSION_ALREADY_RATED = "이미 평가된 세션입니다"
         const val INVALID_RATING = "유효하지 않은 평점입니다"
         const val AI_RESPONSE_ERROR = "AI 응답을 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요."
+        const val SESSION_CANNOT_RATE_ACTIVE = "진행 중인 세션은 평가할 수 없습니다"
+        const val MESSAGE_CONTENT_EMPTY = "메시지 내용을 입력해주세요"
     }
 }

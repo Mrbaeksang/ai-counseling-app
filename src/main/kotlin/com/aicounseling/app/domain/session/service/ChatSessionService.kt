@@ -32,7 +32,6 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class ChatSessionService(
-    private val rq: com.aicounseling.app.global.rq.Rq,
     private val sessionRepository: ChatSessionRepository,
     private val counselorService: CounselorService,
     private val messageRepository: MessageRepository,
@@ -51,10 +50,10 @@ class ChatSessionService(
      */
     @Transactional(readOnly = true)
     fun getUserSessions(
+        userId: Long,
         bookmarked: Boolean?,
         pageable: Pageable,
     ): Page<SessionListResponse> {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
         // Custom Repository 메서드를 사용하여 N+1 문제 해결
         // 한 번의 쿼리로 Session과 Counselor 정보를 함께 조회
         return sessionRepository.findSessionsWithCounselor(userId, bookmarked, pageable)
@@ -65,8 +64,10 @@ class ChatSessionService(
      * @param counselorId 상담사 ID
      * @return 생성된 세션 응답 DTO
      */
-    fun startSession(counselorId: Long): CreateSessionResponse {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
+    fun startSession(
+        userId: Long,
+        counselorId: Long,
+    ): CreateSessionResponse {
         // 상담사 존재 여부 확인
         val counselor =
             counselorService.findById(counselorId)
@@ -93,8 +94,11 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      * @throws IllegalStateException 이미 종료된 세션인 경우
      */
-    fun closeSession(sessionId: Long) {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
+    @Transactional
+    fun closeSession(
+        userId: Long,
+        sessionId: Long,
+    ) {
         val session = getSession(sessionId, userId)
         check(session.closedAt == null) {
             AppConstants.ErrorMessages.SESSION_ALREADY_CLOSED
@@ -111,14 +115,15 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      * @throws IllegalStateException 진행 중인 세션인 경우
      */
+    @Transactional
     fun rateSession(
+        userId: Long,
         sessionId: Long,
         request: RateSessionRequest,
     ): RsData<String> {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
         val session = getSession(sessionId, userId)
         check(session.closedAt != null) {
-            "진행 중인 세션은 평가할 수 없습니다"
+            AppConstants.ErrorMessages.SESSION_CANNOT_RATE_ACTIVE
         }
         // 중복 평가 체크
         if (counselorService.isSessionRated(sessionId)) {
@@ -144,8 +149,10 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
     @Transactional
-    fun toggleBookmark(sessionId: Long): Boolean {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
+    fun toggleBookmark(
+        userId: Long,
+        sessionId: Long,
+    ): Boolean {
         val session = getSession(sessionId, userId)
         session.isBookmarked = !session.isBookmarked
         sessionRepository.save(session)
@@ -174,11 +181,12 @@ class ChatSessionService(
      * @return 수정된 세션
      * @throws IllegalArgumentException 세션을 찾을 수 없는 경우
      */
+    @Transactional
     fun updateSessionTitle(
+        userId: Long,
         sessionId: Long,
         newTitle: String,
     ): ChatSession {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
         val session = getSession(sessionId, userId)
         session.title = newTitle.trim()
         return sessionRepository.save(session)
@@ -193,10 +201,10 @@ class ChatSessionService(
      */
     @Transactional(readOnly = true)
     fun getSessionMessages(
+        userId: Long,
         sessionId: Long,
         pageable: Pageable,
     ): Page<MessageItem> {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
         getSession(sessionId, userId) // 권한 확인용
         val messages = messageRepository.findBySessionId(sessionId, pageable)
         val content =
@@ -218,12 +226,13 @@ class ChatSessionService(
      * @throws IllegalArgumentException 세션을 찾을 수 없거나 메시지 내용이 비어있는 경우
      * @throws IllegalStateException 이미 종료된 세션인 경우
      */
+    @Transactional
     fun sendMessage(
+        userId: Long,
         sessionId: Long,
         content: String,
     ): Triple<Message, Message, ChatSession> {
-        val userId = rq.currentUserId ?: error("로그인이 필요합니다")
-        check(content.isNotBlank()) { "메시지 내용을 입력해주세요" }
+        check(content.isNotBlank()) { AppConstants.ErrorMessages.MESSAGE_CONTENT_EMPTY }
         val session = getSession(sessionId, userId)
         check(session.closedAt == null) { AppConstants.ErrorMessages.SESSION_ALREADY_CLOSED }
 
