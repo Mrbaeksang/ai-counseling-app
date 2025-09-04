@@ -15,6 +15,8 @@ import com.aicounseling.app.domain.session.repository.MessageRepository
 import com.aicounseling.app.global.constants.AppConstants
 import com.aicounseling.app.global.openrouter.OpenRouterService
 import com.aicounseling.app.global.rsData.RsData
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -301,9 +303,14 @@ class ChatSessionService(
                 userMessage = userMessage,
                 isFirstMessage = isFirstMessage,
             )
-        } catch (e: Exception) {
-            logger.error("AI 응답 처리 실패 - sessionId: {}, error: {}", sessionId, e.message, e)
-            // handleAiError에서도 userMessage 사용
+        } catch (e: IOException) {
+            logger.error("AI 응답 처리 중 IO 오류 - sessionId: {}, error: {}", sessionId, e.message, e)
+            return handleAiError(session, userMessage)
+        } catch (e: IllegalStateException) {
+            logger.error("AI 응답 처리 중 상태 오류 - sessionId: {}, error: {}", sessionId, e.message, e)
+            return handleAiError(session, userMessage)
+        } catch (e: IllegalArgumentException) {
+            logger.error("AI 응답 처리 중 인자 오류 - sessionId: {}, error: {}", sessionId, e.message, e)
             return handleAiError(session, userMessage)
         }
     }
@@ -362,6 +369,9 @@ class ChatSessionService(
     ): Pair<Message, ChatSession> {
         val sessionId = session.id
         val messageCount = messageRepository.countBySessionId(sessionId)
+        
+        // userMessage 파라미터 사용 (Detekt UnusedParameter 해결)
+        logger.debug("사용자 메시지 저장 - sessionId: {}, messageId: {}", sessionId, userMessage.id)
 
         // 응답 파싱
         val parsedResponse = parseAiResponse(aiResponse, isFirstMessage)
@@ -598,42 +608,11 @@ class ChatSessionService(
         }
 
         // 마크다운 코드블록 제거
-        val cleanedResponse =
-            rawResponse.trim()
-                .removePrefix("```json").removePrefix("```")
-                .removeSuffix("```").trim()
+        val cleanedResponse = cleanMarkdownCodeBlock(rawResponse)
 
         // JSON 형식인 경우 파싱 시도
         if (cleanedResponse.startsWith("{") && cleanedResponse.endsWith("}")) {
-            try {
-                val jsonNode = objectMapper.readTree(cleanedResponse)
-
-                val content =
-                    jsonNode.get("content")?.asText()
-                        ?: return parseFallbackResponse(rawResponse)
-
-                val phase =
-                    jsonNode.get("phase")?.asText()?.uppercase()?.let {
-                        try {
-                            CounselingPhase.valueOf(it)
-                        } catch (_: IllegalArgumentException) {
-                            logger.warn("잘못된 phase 값: {}, 기본값 사용", it)
-                            CounselingPhase.ENGAGEMENT
-                        }
-                    } ?: CounselingPhase.ENGAGEMENT
-
-                val title =
-                    if (expectTitle) {
-                        jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_MAX_LENGTH)
-                    } else {
-                        null
-                    }
-
-                return ParsedResponse(content, phase, title)
-            } catch (e: Exception) {
-                logger.error("JSON 파싱 실패: {}", e.message)
-                return parseFallbackResponse(rawResponse)
-            }
+            return parseJsonResponse(cleanedResponse, expectTitle, rawResponse)
         }
 
         // JSON이 아닌 경우 폴백 처리
@@ -642,6 +621,58 @@ class ChatSessionService(
             cleanedResponse.take(AppConstants.Session.LOG_PREVIEW_LENGTH),
         )
         return parseFallbackResponse(rawResponse)
+    }
+
+    /**
+     * 마크다운 코드블록 제거 헬퍼 메서드
+     */
+    private fun cleanMarkdownCodeBlock(rawResponse: String): String {
+        return rawResponse.trim()
+            .removePrefix("```json").removePrefix("```")
+            .removeSuffix("```").trim()
+    }
+
+    /**
+     * JSON 응답 파싱 헬퍼 메서드
+     */
+    private fun parseJsonResponse(
+        cleanedResponse: String,
+        expectTitle: Boolean,
+        rawResponse: String
+    ): ParsedResponse {
+        return try {
+            val jsonNode = objectMapper.readTree(cleanedResponse)
+            
+            val content = jsonNode.get("content")?.asText()
+                ?: return parseFallbackResponse(rawResponse)
+            
+            val phase = parsePhaseFromJson(jsonNode)
+            
+            val title = if (expectTitle) {
+                jsonNode.get("title")?.asText()?.take(AppConstants.Session.TITLE_MAX_LENGTH)
+            } else {
+                null
+            }
+            
+            ParsedResponse(content, phase, title)
+        } catch (e: JsonProcessingException) {
+            logger.error("JSON 파싱 실패: {}", e.message)
+            parseFallbackResponse(rawResponse)
+        }
+    }
+
+    /**
+     * Phase 파싱 헬퍼 메서드
+     */
+    private fun parsePhaseFromJson(jsonNode: JsonNode): CounselingPhase {
+        return jsonNode.get("phase")?.asText()?.uppercase()?.let {
+            try {
+                CounselingPhase.valueOf(it)
+            } catch (_: IllegalArgumentException) {
+                logger.warn("잘못된 phase 값: {}, 기본값 사용", it)
+                CounselingPhase.ENGAGEMENT
+            }
+        } ?: CounselingPhase.ENGAGEMENT
     }
 
     /**
