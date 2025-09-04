@@ -48,53 +48,71 @@ graph TB
     SESS --> PG
 ```
 
-## 2. Feature-based 패키지 구조
+## 2. DDD(Domain-Driven Design) 패키지 구조
 
 ```
 com.aicounseling.app/
-├── domain/                    # 기능별 패키지
+├── domain/                    # 비즈니스 도메인
 │   ├── user/                 # 사용자 도메인
-│   │   ├── User.kt          # 엔티티
-│   │   ├── UserService.kt   # 서비스
-│   │   ├── UserRepository.kt # 레포지토리
-│   │   └── UserController.kt # 컨트롤러 (예정)
+│   │   ├── entity/
+│   │   │   └── User.kt
+│   │   ├── service/
+│   │   │   └── UserService.kt
+│   │   ├── repository/
+│   │   │   └── UserRepository.kt
+│   │   ├── controller/
+│   │   │   └── UserController.kt
+│   │   └── dto/
 │   │
 │   ├── counselor/           # 상담사 도메인
-│   │   ├── Counselor.kt
-│   │   ├── CounselorService.kt
-│   │   └── CounselorRepository.kt
+│   │   ├── entity/
+│   │   │   ├── Counselor.kt
+│   │   │   ├── CounselorRating.kt
+│   │   │   └── FavoriteCounselor.kt
+│   │   ├── service/
+│   │   ├── repository/
+│   │   ├── controller/
+│   │   └── dto/
 │   │
-│   ├── session/            # 세션 도메인
-│   │   ├── ChatSession.kt
-│   │   ├── ChatSessionService.kt
-│   │   ├── ChatSessionRepository.kt
-│   │   └── CounselingPhase.kt
-│   │
-│   └── auth/               # 인증 도메인
-│       ├── AuthController.kt
-│       ├── AuthService.kt
-│       └── OAuthTokenVerifier.kt
+│   └── session/            # 세션 도메인
+│       ├── entity/
+│       │   ├── ChatSession.kt
+│       │   ├── Message.kt
+│       │   └── CounselingPhase.kt
+│       ├── service/
+│       ├── repository/
+│       ├── controller/
+│       └── dto/
 │
-├── global/                  # 전역 설정/공통
-│   ├── config/             # Spring 설정
-│   ├── security/           # JWT, 필터
-│   ├── exception/          # 전역 예외 처리
-│   ├── openrouter/         # OpenRouter API 클라이언트
-│   ├── jpa/                # BaseEntity
-│   └── rsData/             # 응답 포맷
-│
-└── standard/
-    └── util/               # 유틸리티
+└── global/                  # 공통 관심사
+    ├── auth/               # OAuth 인증
+    │   ├── controller/
+    │   │   └── AuthController.kt
+    │   ├── service/
+    │   │   ├── AuthService.kt
+    │   │   └── OAuthTokenVerifier.kt
+    │   └── dto/
+    ├── config/             # Spring 설정
+    ├── security/           # JWT, 필터
+    ├── exception/          # 전역 예외 처리
+    ├── openrouter/         # OpenRouter API
+    ├── entity/             # BaseEntity
+    ├── rsData/             # 응답 포맷
+    ├── rq/                 # Request Context
+    ├── aspect/             # AOP
+    ├── pagination/         # 페이지네이션
+    └── constants/          # 상수
 ```
 
 ## 3. 핵심 컴포넌트
 
 ### 3.1 Domain Entities
-- **User**: OAuth 사용자 정보
-- **Counselor**: AI 상담사 정보 + 성격 매트릭스
-- **ChatSession**: 상담 세션 + 진행 단계
-- **Message**: 개별 메시지 (미구현)
-- **SessionSummary**: AI 생성 요약 (미구현)
+- **User**: OAuth 사용자 정보 (BaseEntity 상속)
+- **Counselor**: AI 상담사 정보 + base_prompt
+- **ChatSession**: 상담 세션 (제목, 북마크)
+- **Message**: 개별 메시지 + 상담 단계
+- **CounselorRating**: 세션 평가 (1-10점)
+- **FavoriteCounselor**: 즐겨찾기 매핑
 
 ### 3.2 Service Layer
 ```kotlin
@@ -146,7 +164,7 @@ class OpenRouterService(
         conversationHistory: List<Message>
     ): String {
         val request = ChatRequest(
-            model = "openai/gpt-oss-20b",
+            model = "meta-llama/llama-3.2-3b-instruct",
             messages = buildMessages(counselorPrompt, conversationHistory, userMessage),
             temperature = 0.7,
             max_tokens = 2000
@@ -208,21 +226,38 @@ sequenceDiagram
 
 ### 5.1 단계 정의
 ```kotlin
-enum class CounselingPhase {
-    RAPPORT_BUILDING,     // 라포 형성 - 인사, 편안한 분위기
-    PROBLEM_EXPLORATION,  // 문제 탐색 - 구체적 상황 파악
-    PATTERN_ANALYSIS,     // 패턴 분석 - 반복 패턴 파악
-    INTERVENTION,         // 개입 - 대안 제시, 통찰
-    ACTION_PLANNING,      // 실행 계획 - 구체적 행동
-    CLOSING              // 마무리 - 요약, 격려
+enum class CounselingPhase(
+    val koreanName: String,
+    val description: String
+) {
+    ENGAGEMENT(      // 관계 형성 - 신뢰 구축
+        "관계 형성",
+        "첨 인사, 관계 형성, 목표 설정 중일 때"
+    ),
+    EXPLORATION(     // 문제 탐색 - 구체적 경험
+        "문제 탐색",
+        "문제 상황, 감정, 구체적 경험을 탐색할 때"
+    ),
+    INSIGHT(         // 통찰 유도 - 패턴 발견
+        "통찰 유도",
+        "패턴 발견, 새로운 관점 제시, 깊은 성찰을 유도할 때"
+    ),
+    ACTION(          // 행동 계획 - 실천 방법
+        "행동 계획",
+        "실천 가능한 작은 변화, 구체적 행동 계획을 세울 때"
+    ),
+    CLOSING(         // 마무리 - 정리
+        "마무리",
+        "오늘 대화 정리, 긍정적 마무리, 다음 만남을 기대할 때"
+    )
 }
 ```
 
-### 5.2 AI 자율 진행
-- 고정된 턴 수 없음
-- 대화 맥락 기반 자동 판단
-- 자연스러운 단계 전환
-- 메타 발언 금지
+### 5.2 AI 자율 진행 규칙
+- 메시지 수 기반 최소 단계 보장
+- 이전 단계로 회귀 방지
+- 선택 가능한 단계 중 선택
+- 코드블록 없는 순수 JSON 응답
 
 ## 6. 데이터베이스 스키마
 
@@ -243,23 +278,26 @@ CREATE TABLE users (
 -- counselors 테이블
 CREATE TABLE counselors (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+    name VARCHAR(50) UNIQUE NOT NULL,
     title VARCHAR(100) NOT NULL,
-    description VARCHAR(500) NOT NULL,
-    personality_matrix TEXT NOT NULL,  -- JSON
+    description TEXT NOT NULL,
     base_prompt TEXT NOT NULL,
+    avatar_url VARCHAR(500),
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- chat_sessions 테이블
 CREATE TABLE chat_sessions (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id),
-    counselor_id BIGINT REFERENCES counselors(id),
-    phase VARCHAR(50) NOT NULL,
-    phase_metadata TEXT,
+    user_id BIGINT REFERENCES users(id) NOT NULL,
+    counselor_id BIGINT REFERENCES counselors(id) NOT NULL,
+    title VARCHAR(100),
+    is_bookmarked BOOLEAN DEFAULT false,
+    last_message_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closed_at TIMESTAMP
 );
 ```
@@ -271,34 +309,35 @@ CREATE TABLE chat_sessions (
 POST /api/auth/login/google   # Google 토큰 검증 + JWT 발급
 POST /api/auth/login/kakao    # Kakao 토큰 검증 + JWT 발급  
 POST /api/auth/login/naver    # Naver 토큰 검증 + JWT 발급
-POST /api/auth/refresh         # JWT 토큰 갱신 (예정)
-POST /api/auth/logout          # 로그아웃 (예정)
+POST /api/auth/refresh         # JWT 토큰 갱신
 ```
 
 ### 7.2 사용자 API
 ```http
-GET /api/users/me                   # 내 정보 조회
-PATCH /api/users/nickname           # 닉네임 변경
+GET /api/users/me              # 내 정보 조회
+PATCH /api/users/nickname      # 닉네임 변경
+DELETE /api/users/me           # 회원 탈퇴
 ```
 
 ### 7.3 상담사 API
 ```http
-GET /api/counselors                 # 상담사 목록
-GET /api/counselors/{id}            # 상담사 상세
-GET /api/counselors/favorites       # 즐겨찾기 목록
-POST /api/counselors/{id}/favorite  # 즐겨찾기 추가
-DELETE /api/counselors/{id}/favorite # 즐겨찾기 제거
-GET /api/counselors/{id}/ratings    # 평가 목록 조회
+GET /api/counselors                     # 상담사 목록 (페이지네이션)
+GET /api/counselors/{id}                # 상담사 상세
+GET /api/counselors/favorites           # 즐겨찾기 목록 (페이지네이션)
+POST /api/counselors/{id}/favorite      # 즐겨찾기 추가
+DELETE /api/counselors/{id}/favorite    # 즐겨찾기 제거
 ```
 
 ### 7.4 세션 API
 ```http
-POST /api/sessions                  # 세션 시작 (상담 시작)
-GET /api/sessions/{id}              # 세션 조회
-POST /api/sessions/{id}/messages    # 메시지 전송
-GET /api/sessions/{id}/messages     # 메시지 목록
-POST /api/sessions/{id}/close       # 세션 종료
-POST /api/sessions/{id}/rating      # 평가 남기기
+GET /api/sessions                        # 내 세션 목록 조회 (페이지네이션)
+POST /api/sessions                       # 새 세션 시작
+POST /api/sessions/{id}/close            # 세션 종료
+GET /api/sessions/{id}/messages          # 메시지 목록 조회 (페이지네이션)
+POST /api/sessions/{id}/messages         # 메시지 전송
+POST /api/sessions/{id}/rating           # 세션 평가
+POST /api/sessions/{id}/bookmark         # 북마크 토글
+PATCH /api/sessions/{id}/title           # 세션 제목 변경
 ```
 
 ## 8. 배포 아키텍처
@@ -357,17 +396,24 @@ Supabase (PostgreSQL)
 
 ## 12. 확장 계획
 
-### Phase 1 (MVP)
-- 기본 채팅 기능
-- 3-5명 상담사
-- OAuth 로그인
+### Phase 1 - MVP (완료 - 2025년 1월)
+- OAuth 2.0 소셜 로그인 (Google, Kakao, Naver)
+- JWT 기반 인증 시스템
+- 상담사 목록 조회 및 상세 정보
+- AI와 실시간 대화 (5단계 상담 프로세스)
+- 세션 북마크 및 제목 관리
+- 세션 평가 시스템
+- 즐겨찾기 상담사 관리
+- 103개 테스트 통과 (100% 성공률)
 
-### Phase 2
-- 메시지 북마크
-- 세션 요약
-- 상담사 평가
+### Phase 2 (개발 예정)
+- 대화 내용 검색
+- 세션 요약 기능
+- 상담 통계 대시보드
+- 프리미엄 상담사
 
-### Phase 3
-- 실시간 알림
-- 음성 상담
-- 그룹 상담
+### Phase 3 (장기 계획)
+- 실시간 알림 (WebSocket)
+- 음성 상담 기능
+- 그룹 상담 세션
+- AI 감정 분석
