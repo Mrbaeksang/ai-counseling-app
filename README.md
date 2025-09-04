@@ -7,7 +7,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.25-7F52FF?logo=kotlin)](https://kotlinlang.org)
 [![Tests](https://img.shields.io/badge/Tests-103%20Passed-success)](https://github.com/Mrbaeksang/ai-counseling-app/actions)
-[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/License-Private-red)]()
 
 **[API 명세서](docs/api-specification.yaml)** | **[시스템 아키텍처](docs/system-architecture.md)** | **[ERD](docs/erd-diagram.md)** | **[유스케이스](docs/use-case-diagram.md)** | **[요구사항](docs/SRS.md)**
 
@@ -159,7 +159,7 @@ Test Results: 103 passed (100%)
 
 ## 📝 **라이센스**
 
-MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
+Private Repository - 상업적 사용 금지
 
 ---
 

@@ -76,7 +76,7 @@ jobs:
       env:
         SPRING_PROFILES_ACTIVE: test
         OPENROUTER_API_KEY: test-api-key
-        JWT_SECRET: test-jwt-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2024
+        JWT_SECRET: test-jwt-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2025
     
     # - name: 코드 커버리지 체크 (나중에 Jacoco 추가)
     #   run: ./gradlew jacocoTestCoverageVerification
