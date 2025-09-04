@@ -44,6 +44,38 @@ object AppConstants {
         const val AI_RETRY_DELAY_BASE = 1000L
         const val AI_RESPONSE_MIN_LENGTH = 10
         const val LOG_PREVIEW_LENGTH = 100
+
+        // 프롬프트 템플릿
+        const val PROMPT_PHASE_INSTRUCTION = """[단계 선택 규칙 - 매우 중요!]
+1. **절대 규칙**: 이전 단계(%s)보다 낮은 단계로 돌아가지 마세요
+2. **최소 단계**: %d번째 대화이므로 최소 %s 이상이어야 합니다
+3. **선택 가능한 단계**: %s"""
+
+        const val PROMPT_PHASE_KEYWORDS = """[키워드 기반 단계 판단 가이드]
+- ENGAGEMENT 키워드: 안녕, 처음, 시작, 만남
+- EXPLORATION 키워드: 고민, 문제, 어려움, 힘든, 때문에, 걱정
+- INSIGHT 키워드: 깨달음, 알게, 이해, 패턴, 반복, 왜
+- ACTION 키워드: 해볼게, 시도, 실천, 계획, 목표, 방법
+- CLOSING 키워드: 감사, 마무리, 정리, 다음에
+
+사용자 메시지에 위 키워드가 포함되면 해당 단계를 우선 고려하되,
+반드시 선택 가능한 단계 중에서만 선택하세요."""
+
+        const val PROMPT_RESPONSE_FORMAT = """[응답 형식]
+반드시 아래 JSON 형식으로만 응답하세요.
+코드블록(```)을 사용하지 마세요. 순수 JSON만 반환하세요.
+{
+  "content": "상담 응답 내용 (공감적이고 따뜻하게)",
+  "phase": "선택한 단계 (%s 중 하나)"
+}"""
+
+        const val PROMPT_FIRST_MESSAGE_FORMAT = """첫 메시지이므로 세션 제목도 포함하세요.
+코드블록(```)을 사용하지 마세요. 순수 JSON만 반환하세요.
+{
+  "content": "상담 응답 내용",
+  "phase": "ENGAGEMENT",
+  "title": "대화를 요약한 15자 이내 제목"
+}"""
     }
 
     object Rating {
