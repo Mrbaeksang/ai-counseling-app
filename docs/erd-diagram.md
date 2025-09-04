@@ -15,68 +15,69 @@ erDiagram
     chat_sessions ||--o{ messages : "contains"
     
     users {
-        bigint id PK
-        varchar email UK
-        varchar nickname
-        varchar auth_provider "GOOGLE/KAKAO/NAVER"
+        bigint id PK "BaseEntity"
+        varchar email "NOT NULL"
+        varchar nickname "NOT NULL, length 100"
+        enum auth_provider "GOOGLE/KAKAO/NAVER"
         varchar provider_id "OAuth 제공자 ID"
-        varchar profile_image_url
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
-        timestamp last_login_at
+        varchar profile_image_url "length 500, nullable"
+        boolean is_active "default true"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
+        timestamp last_login_at "nullable"
     }
     
     counselors {
-        bigint id PK
-        varchar name
-        varchar title
-        text description
-        text base_prompt "AI 지시사항 (성격 특성 포함)"
-        varchar avatar_url "상담사 프로필 이미지 URL"
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
+        bigint id PK "BaseEntity"
+        varchar name "NOT NULL, UK"
+        varchar title "NOT NULL"
+        text description "NOT NULL"
+        text base_prompt "AI 지시사항"
+        varchar avatar_url "nullable"
+        boolean is_active "default true"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
     }
     
     chat_sessions {
-        bigint id PK
-        bigint user_id FK
-        bigint counselor_id FK
-        varchar title "세션 제목 (첫 메시지 기반 자동 생성, 수정 가능)"
-        enum phase "RAPPORT/EXPLORATION/ANALYSIS/INTERVENTION/PLANNING/CLOSING"
-        text phase_metadata "AI가 판단한 현재 상태"
-        boolean closing_suggested
-        boolean is_bookmarked "세션 북마크"
-        timestamp created_at
-        timestamp last_message_at
-        timestamp closed_at "세션 종료 시간 (null = 진행중)"
+        bigint id PK "BaseEntity"
+        bigint user_id FK "NOT NULL"
+        bigint counselor_id FK "NOT NULL"
+        varchar title "nullable, length 100"
+        boolean is_bookmarked "default false"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
+        timestamp last_message_at "nullable"
+        timestamp closed_at "nullable (null = 진행중)"
     }
     
     messages {
-        bigint id PK
-        bigint session_id FK
+        bigint id PK "BaseEntity"
+        bigint session_id FK "NOT NULL"
         enum sender_type "USER/AI"
-        text content
-        text ai_phase_assessment "AI가 판단한 단계 정보"
-        timestamp created_at
+        text content "NOT NULL"
+        enum phase "ENGAGEMENT/EXPLORATION/INSIGHT/ACTION/CLOSING"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
     }
     
     favorite_counselors {
-        bigint id PK
-        bigint user_id FK
-        bigint counselor_id FK
-        timestamp created_at
+        bigint id PK "BaseEntity"
+        bigint user_id FK "NOT NULL"
+        bigint counselor_id FK "NOT NULL, UK with user_id"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
     }
     
     counselor_ratings {
-        bigint id PK
-        bigint user_id FK
-        bigint counselor_id FK
-        bigint session_id FK
+        bigint id PK "BaseEntity"
+        bigint user_id FK "NOT NULL"
+        bigint counselor_id FK "NOT NULL"
+        bigint session_id FK "NOT NULL, UK"
         integer rating "1-10 (UI: 별 0.5개=1, 별 5개=10)"
-        text review
-        timestamp created_at
+        text feedback "nullable, length 500"
+        timestamp created_at "BaseEntity"
+        timestamp updated_at "BaseEntity"
     }
 ```
 
@@ -99,21 +100,19 @@ erDiagram
 ### 3. chat_sessions
 - 사용자와 상담사 간의 대화 세션
 - `title`: 세션 제목 (첫 메시지 기반 자동 생성, 사용자 수정 가능)
-- `phase`: AI가 자율적으로 판단하는 상담 단계
-  - RAPPORT_BUILDING: 라포 형성
-  - PROBLEM_EXPLORATION: 문제 탐색
-  - PATTERN_ANALYSIS: 패턴 분석
-  - INTERVENTION: 개입/해결
-  - ACTION_PLANNING: 실행 계획
-  - CLOSING: 마무리
-- `phase_metadata`: AI의 현재 판단 상태
-- `closing_suggested`: 마무리 제안 여부
 - `is_bookmarked`: 사용자가 북마크한 세션
+- `last_message_at`: 마지막 메시지 시간
+- `closed_at`: 세션 종료 시간 (null = 진행중)
 
 ### 4. messages
 - 개별 메시지 저장
-- `ai_phase_assessment`: AI가 각 메시지마다 판단한 단계 정보
 - `sender_type`: 메시지 발신자 (USER/AI)
+- `phase`: 메시지가 속한 상담 단계
+  - ENGAGEMENT: 관계 형성
+  - EXPLORATION: 문제 탐색
+  - INSIGHT: 통찰 유도
+  - ACTION: 행동 계획
+  - CLOSING: 마무리
 
 ### 5. favorite_counselors
 - 사용자가 즐겨찾기한 상담사
@@ -125,7 +124,8 @@ erDiagram
   - UI 표시: 별점 0.5~5.0 (반개 단위)
   - 변환: DB값 ÷ 2 = 별점, 별점 × 2 = DB값
   - 예: 1=★☆☆☆☆, 5=★★★☆☆, 10=★★★★★
-- 매칭 알고리즘 개선에 활용
+- `feedback`: 피드백 텍스트 (최대 500자)
+- 각 세션당 1개의 평가만 가능 (session_id UK)
 
 ## 인덱스 전략
 
