@@ -75,7 +75,7 @@ class SendMessageApiTest
                 registry.add("jwt.secret") {
                     System.getenv("JWT_SECRET")
                         ?: dotenv["JWT_SECRET"]
-                        ?: "test-jwt-secret-key-for-jwt-auth-512-bits-long-2024-with-extra-characters-for-security"
+                        ?: "test-jwt-secret-key-for-jwt-auth-512-bits-long-2025-with-extra-characters-for-security"
                 }
             }
         }

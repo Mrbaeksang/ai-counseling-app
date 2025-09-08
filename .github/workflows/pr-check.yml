@@ -61,7 +61,7 @@ jobs:
       env:
         SPRING_PROFILES_ACTIVE: test
         OPENROUTER_API_KEY: test-api-key
-        JWT_SECRET: test-jwt-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2024
+        JWT_SECRET: test-jwt-secret-key-for-jwt-authentication-that-is-at-least-256-bits-long-for-security-requirements-2025
     
     - name: PR 코멘트 - 성공
       if: success()

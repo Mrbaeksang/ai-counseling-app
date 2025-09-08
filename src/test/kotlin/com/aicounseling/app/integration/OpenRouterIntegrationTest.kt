@@ -38,7 +38,7 @@ class OpenRouterIntegrationTest {
             registry.add("jwt.secret") {
                 System.getenv("JWT_SECRET")
                     ?: dotenv["JWT_SECRET"]
-                    ?: "test-jwt-secret-key-for-jwt-auth-256-bits-long-2024"
+                    ?: "test-jwt-secret-key-for-jwt-auth-256-bits-long-2025"
             }
         }
     }

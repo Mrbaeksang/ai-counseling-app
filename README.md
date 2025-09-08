@@ -7,7 +7,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.4-brightgreen?style=for-the-badge&logo=spring)](https://spring.io/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.25-7F52FF?style=for-the-badge&logo=kotlin)](https://kotlinlang.org/)
 [![Tests](https://img.shields.io/badge/Tests-103%20Passed-success?style=for-the-badge)](https://github.com/Mrbaeksang/ai-counseling-app)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-Private-red?style=for-the-badge)]()
 
 [**📚 API 문서**](./docs/api-specification.yaml) • 
 [**🏗️ 아키텍처**](./docs/system-architecture.md) • 
@@ -147,7 +147,7 @@ src/main/kotlin/com/aicounseling/app/
 
 ## 🔥 Features
 
-### ✅ 구현 완료 (Phase 1 - MVP)
+### ✅ 구현 완료 (Phase 1 - MVP, 2025년 9월)
 
 #### 🔐 인증 시스템
 - [x] OAuth 2.0 소셜 로그인 (Google, Kakao, Naver)
@@ -295,7 +295,7 @@ style: 코드 포맷팅
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Private Repository - 상업적 사용 금지
 
 ---
 
